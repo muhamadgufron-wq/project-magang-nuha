@@ -91,6 +91,3 @@ cd login-page
 - [ ] Integrasi **Rate Limiting** untuk mencegah serangan Brute Force.
 
 ---
-
-**Dibuat oleh:** [Nama Anda]
-**Status Proyek:** Tahap Pengembangan (v1.0 - Validation & JWT Implemented)
