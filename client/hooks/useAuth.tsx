@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types/auth';
 import { useRouter } from 'next/navigation';
+import { getCookie, setCookie, eraseCookie } from '@/utils/cookies';
 
 interface AuthContextType {
   user: User | null;
@@ -13,33 +14,55 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Provider komponen yang mengelola state autentikasi global menggunakan Cookies.
+ * Menyediakan data user, status loading, serta fungsi login dan logout.
+ * 
+ * @param {Object} props - Properti komponen.
+ * @param {React.ReactNode} props.children - Elemen anak yang akan diberikan akses ke context.
+ */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // Cek localStorage saat aplikasi pertama kali dimuat
-    const token = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
+    // Memulihkan sesi dari cookies saat aplikasi pertama kali dimuat
+    const token = getCookie("token");
+    const storedUser = getCookie("user");
 
     if (token && storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(decodeURIComponent(storedUser)));
+      } catch (error) {
+        console.error("Gagal mem-parse data user dari cookie", error);
+        eraseCookie("token");
+        eraseCookie("user");
+      }
     }
     setLoading(false);
   }, []);
 
+  /**
+   * Menyimpan data autentikasi ke dalam Cookies.
+   * 
+   * @param {string} token - Token JWT dari server.
+   * @param {User} userData - Data profil user.
+   */
   const login = (token: string, userData: User) => {
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(userData));
+    // Simpan token selama 1 hari
+    setCookie("token", token, 1);
+    // Simpan data user (di-encode agar aman disimpan di cookie)
+    setCookie("user", encodeURIComponent(JSON.stringify(userData)), 1);
     setUser(userData);
   };
 
+  /**
+   * Menghapus seluruh data autentikasi dari Cookies dan mengarahkan kembali ke halaman login.
+   */
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    // Hapus cookie token
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Strict";
+    eraseCookie("token");
+    eraseCookie("user");
     setUser(null);
     router.push("/login");
   };
@@ -51,6 +74,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+/**
+ * Hook kustom untuk mengakses context autentikasi.
+ * Harus digunakan di dalam komponen yang dibungkus oleh AuthProvider.
+ * 
+ * @returns {AuthContextType} Objek context yang berisi user, loading, login, dan logout.
+ * @throws {Error} Jika hook digunakan di luar AuthProvider.
+ */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

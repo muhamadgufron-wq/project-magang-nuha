@@ -1,93 +1,95 @@
-# 🛡️ Fullstack Login System (Standard Industry)
+# Modern Login Page - Fullstack (Next.js & Express)
 
-Sistem autentikasi lengkap yang dibangun dengan arsitektur modern (Client-Server) menggunakan Next.js, Express.js, dan Prisma ORM. Proyek ini dioptimalkan untuk keamanan dan pengalaman pengguna yang responsif.
+Aplikasi autentikasi modern yang dibangun dengan arsitektur terpisah (Client-Server), mengutamakan performa tinggi, validasi ketat, dan pengalaman pengguna yang mulus.
 
-## 🚀 Teknologi yang Digunakan
+## 🚀 Teknologi Utama
 
-### **Frontend (Client)**
-*   **Framework:** Next.js 15 (App Router)
-*   **Language:** TypeScript
-*   **Styling:** Tailwind CSS (Modern UI)
-*   **Notifications:** SweetAlert2 (Visual feedback)
-*   **State Management:** React Hooks (useState, useEffect)
+### Frontend (Client)
+- **Framework:** Next.js (App Router)
+- **State Management:** TanStack Query v5 (React Query)
+- **Form Management:** React Hook Form
+- **Validation:** Zod (Schema-based validation)
+- **Styling:** Tailwind CSS
+- **Authentication:** Cookies-based session management
+- **UI Components:** SweetAlert2 for interactive notifications
 
-### **Backend (Server)**
-*   **Runtime:** Node.js
-*   **Framework:** Express.js
-*   **Language:** TypeScript
-*   **Database ORM:** Prisma
-*   **Database:** PostgreSQL (via Supabase/Local)
-*   **Security:**
-    *   **JWT (JSON Web Token):** Untuk autentikasi sesi.
-    *   **Bcrypt:** Untuk hashing password sebelum disimpan ke database.
-    *   **Zod:** Validasi skema input (Email & Password).
+### Backend (Server)
+- **Runtime:** Node.js (Express)
+- **Language:** TypeScript
+- **ORM:** Prisma
+- **Database:** PostgreSQL/MySQL (via Prisma)
+- **Security:** JWT (JSON Web Token) & Bcrypt for hashing
 
 ---
 
-## 📁 Struktur Proyek
+## 📂 Struktur Folder Detail
 
+### 1. Client (`/client`)
 ```text
-login-page/
-├── client/              # Frontend (Next.js)
-│   ├── app/             # Routing & Pages
-│   ├── components/      # UI Components
-│   ├── services/        # API Call Functions
-│   └── types/           # TypeScript Definitions
-├── server/              # Backend (Express)
-│   ├── src/
-│   │   ├── controllers/ # Logic Pengendali HTTP
-│   │   ├── services/    # Logic Bisnis & Database
-│   │   ├── routes/      # Definisi Endpoint API
-│   │   ├── validations/ # Skema Validasi Zod
-│   │   └── config/      # Konfigurasi Database (Prisma)
-│   └── prisma/          # Skema Database
-└── README.md            # Dokumentasi Utama
+client/
+├── app/                  # Next.js App Router
+│   ├── (auth)/           # Route Group untuk Autentikasi
+│   │   ├── login/        # Halaman Login
+│   │   └── register/     # Halaman Register
+│   ├── layout.tsx        # Root Layout & Provider Injection
+│   ├── page.tsx          # Halaman Utama (Terproteksi)
+│   └── providers.tsx     # Konfigurasi TanStack Query Provider
+├── hooks/
+│   └── useAuth.tsx       # Global Auth Context & Hook (Cookie-based)
+├── services/
+│   └── authService.ts    # Komunikasi API (Login/Register) dengan JSDoc
+├── types/
+│   └── auth.ts           # Definisi tipe TypeScript untuk data Auth
+├── utils/
+│   ├── cookies.ts        # Utilitas manajemen Cookie (get, set, erase)
+│   └── validation.ts     # Skema validasi Zod (Shared across forms)
+├── proxy.ts              # Middleware/Proxy untuk Auth Guard (Server-side)
+└── public/               # Asset statis (SVG, Images)
+```
+
+### 2. Server (`/server`)
+```text
+server/
+├── prisma/               # Konfigurasi Database & Schema Prisma
+├── src/
+│   ├── config/           # Konfigurasi koneksi (Prisma Client)
+│   ├── controllers/      # Logika penanganan request API
+│   ├── routes/           # Definisi endpoint API (/auth/login, etc)
+│   ├── services/         # Logika bisnis & manipulasi database
+│   ├── types/            # Definisi tipe TypeScript backend
+│   └── validations/      # Validasi input sisi server (Zod/Joi)
+└── .env                  # Environment Variables (Database URL, Secret Key)
 ```
 
 ---
 
-## 🔐 Fitur Keamanan (Industry Standard)
+## 🛡️ Fitur Keamanan & UX
 
-1.  **Validasi Input Terpusat:** Menggunakan **Zod** di sisi server untuk memastikan hanya data valid (format email benar, password minimal 6 karakter) yang diproses.
-2.  **Password Hashing:** Password pengguna tidak pernah disimpan dalam bentuk teks biasa, melainkan di-hash menggunakan algoritma **Bcrypt**.
-3.  **Secure Authentication:** Menggunakan **JWT** untuk pertukaran data yang aman antara client dan server.
-4.  **Error Handling:** Penanganan error yang informatif di sisi server untuk mencegah kebocoran informasi sistem.
-
----
-
-## ⚙️ Cara Instalasi & Menjalankan
-
-### **1. Clone Repositori**
-```bash
-git clone <url-repo-anda>
-cd login-page
-```
-
-### **2. Setup Backend**
-1.  Masuk ke folder server: `cd server`
-2.  Instal dependensi: `npm install`
-3.  Konfigurasi `.env`:
-    ```env
-    DATABASE_URL="postgresql://user:pass@localhost:5432/db_name"
-    PORT=5000
-    JWT_SECRET=rahasia_anda_disini
-    ```
-4.  Jalankan migrasi database: `npx prisma migrate dev`
-5.  Mulai server: `npm run dev`
-
-### **3. Setup Client**
-1.  Masuk ke folder client: `cd ../client`
-2.  Instal dependensi: `npm install`
-3.  Mulai aplikasi: `npm run dev`
-4.  Buka di browser: `http://localhost:3000`
+1.  **Auth Guard (Proxy/Middleware):** Proteksi rute di sisi server. User yang belum login tidak bisa mengakses `/`, dan user yang sudah login tidak bisa kembali ke `/login`.
+2.  **Uncontrolled Forms:** Menggunakan React Hook Form untuk meminimalkan re-render, membuat input terasa sangat responsif.
+3.  **Server-side Validation:** Validasi ganda (Client & Server) menggunakan Zod untuk menjamin integritas data.
+4.  **Cookie Persistence:** Sesi tetap tersimpan meskipun browser ditutup (24 jam expiry).
+5.  **TanStack Engine:** Manajemen status loading dan error yang otomatis dan reaktif.
 
 ---
 
-## 🛠️ Pengembangan Selanjutnya (Roadmap)
-- [ ] Implementasi **HttpOnly Cookies** untuk keamanan token yang lebih tinggi.
-- [ ] Penambahan fitur **Register Account**.
-- [ ] Pembuatan **Middleware Terproteksi** di sisi client (Next.js Middleware).
-- [ ] Fitur **Lupa Password** via Email.
-- [ ] Integrasi **Rate Limiting** untuk mencegah serangan Brute Force.
+## 🛠️ Cara Menjalankan
+
+### Backend
+1. Masuk ke folder `server`.
+2. Instal dependensi: `npm install`.
+3. Setup `.env` dan jalankan migrasi database: `npx prisma migrate dev`.
+4. Jalankan server: `npm run dev`.
+
+### Frontend
+1. Masuk ke folder `client`.
+2. Instal dependensi: `npm install`.
+3. Jalankan aplikasi: `npm run dev`.
+4. Akses di `http://localhost:3000`.
 
 ---
+
+## 📝 Standar Pengembangan (Berdasarkan GEMINI.md)
+- **TypeScript:** Strict typing digunakan di seluruh codebase.
+- **Documentation:** JSDoc wajib ditambahkan pada setiap fungsi dan hook utama.
+- **Clean Code:** Pemisahan antara logika bisnis (Service/Hook) dan presentasi (UI Components).

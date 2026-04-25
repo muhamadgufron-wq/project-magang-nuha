@@ -1,63 +1,62 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import { loginUser } from '@/services/authService';
 import { useRouter } from 'next/navigation';
 import Swal from 'sweetalert2';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { loginSchema } from '@/utils/validation';
+import { useMutation } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 const LoginPage = () => {
   const router = useRouter();
   const { login: authLogin } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrors({}); // Reset errors
-    
-    // Validasi Client-side menggunakan Zod
-    const validation = loginSchema.safeParse({ email, password });
-    
-    if (!validation.success) {
-      const fieldErrors: any = {};
-      validation.error.issues.forEach((issue) => {
-        fieldErrors[issue.path[0]] = issue.message;
-      });
-      setErrors(fieldErrors);
-      return;
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors }
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: ""
     }
+  });
 
-    setLoading(true);
-
-    try {
-      const data = await loginUser(email, password);
-      document.cookie = `token=${data.token}; path=/; max-age=86400; SameSite=Strict`;
+  const loginMutation = useMutation({
+    mutationFn: async (data: LoginFormValues) => {
+      return await loginUser(data.email, data.password);
+    },
+    onSuccess: (data) => {
       authLogin(data.token, data.user);
 
-      await Swal.fire({
+      Swal.fire({
         icon: 'success',
         title: 'Berhasil masuk',
         text: `Selamat datang, ${data.user.username}!`,
         showConfirmButton: false,
         timerProgressBar: false,
+        timer: 1500
       });
 
       router.push("/");
       router.refresh();
-
-    } catch (err: any) {
+    },
+    onError: (err: any) => {
       const msg = err.message || "";
       
       if (msg === "Email tidak terdaftar") {
-        setErrors({ email: msg });
+        setError("email", { type: "manual", message: msg });
       } else if (msg === "Kata sandi salah") {
-        setErrors({ password: msg });
+        setError("password", { type: "manual", message: msg });
       } else {
         Swal.fire({
           icon: 'error',
@@ -66,9 +65,11 @@ const LoginPage = () => {
           confirmButtonColor: '#10b981',
         });
       }
-    } finally {
-      setLoading(false);
     }
+  });
+
+  const onSubmit = (data: LoginFormValues) => {
+    loginMutation.mutate(data);
   };
 
   return (
@@ -81,7 +82,7 @@ const LoginPage = () => {
             </h2>
           </div>
 
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div className="space-y-4">
               <div>
                 <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 mb-1">
@@ -89,14 +90,12 @@ const LoginPage = () => {
                 </label>
                 <input
                   id="email-address"
-                  name="email"
                   type="email"
+                  {...register("email")}
                   className={`block w-full px-4 py-3 rounded-xl border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-emerald-500'} text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 sm:text-sm`}
                   placeholder="Masukan Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                 />
-                {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
+                {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
               </div>
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
@@ -104,23 +103,21 @@ const LoginPage = () => {
                 </label>
                 <input
                   id="password"
-                  name="password"
                   type="password"
+                  {...register("password")}
                   className={`block w-full px-4 py-3 rounded-xl border ${errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-emerald-500'} text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 sm:text-sm`}
                   placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                 />
-                {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
+                {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
               </div>
             </div>
 
             <button
               type="submit"
-              disabled={loading}
-              className={`group relative flex w-full justify-center rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-white shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={loginMutation.isPending}
+              className={`group relative flex w-full justify-center rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-white shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${loginMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {loading ? (
+              {loginMutation.isPending ? (
                 <span className="flex items-center">
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

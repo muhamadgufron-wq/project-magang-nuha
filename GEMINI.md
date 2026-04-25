@@ -4,6 +4,7 @@
 - **Clean Code:** Tulis kode yang bersih, deklaratif, dan mudah dipahami. Hindari kompleksitas yang tidak perlu.
 - **Maintainability:** Gunakan pola desain yang konsisten (seperti Separation of Concerns). Pastikan logika bisnis terpisah dari presentasi (UI).
 - **TypeScript:** Gunakan pengetikan yang ketat (strict typing). Hindari penggunaan `any`.
+- **TanStackQuery:** Gunakan tanstackquery.
 
 ## Documentation
 - **Clear Documentation:** Setiap fungsi, komponen, atau modul yang kompleks harus didokumentasikan dengan jelas.
