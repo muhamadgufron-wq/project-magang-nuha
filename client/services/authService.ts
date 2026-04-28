@@ -1,4 +1,4 @@
-import { AuthResponse } from "../types/auth";
+import { AuthResponse, ApiResponse } from "../types/auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -19,13 +19,13 @@ export const loginUser = async (email: string, password: string): Promise<AuthRe
     body: JSON.stringify({ email, password }),
   });
 
-  const data = await response.json();
+  const data: ApiResponse<AuthResponse> = await response.json();
 
-  if (!response.ok) {
+  if (!response.ok || !data.success) {
     throw new Error(data.message || "Gagal melakukan login");
   }
 
-  return data;
+  return data.data as AuthResponse;
 };
 
 /**
@@ -46,11 +46,11 @@ export const registerUser = async (username: string, email: string, password: st
     body: JSON.stringify({ username, email, password }),
   });
 
-  const data = await response.json();
+  const data: ApiResponse<AuthResponse> = await response.json();
 
-  if (!response.ok) {
+  if (!response.ok || !data.success) {
     throw new Error(data.message || "Gagal melakukan pendaftaran");
   }
 
-  return data;
+  return data.data as AuthResponse;
 };

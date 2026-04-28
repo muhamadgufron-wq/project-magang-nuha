@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
-import { LoginRequest, AuthResponse } from '../types/user';
+import { LoginRequest } from '../types/user';
 import authService from '../services/authService';
 import { loginSchema, registerSchema } from '../validations/authValidation';
 import { ZodError } from 'zod';
+import { sendSuccess, sendError } from '../utils/response';
 
 
 export const register = async (req: Request, res: Response) => {
@@ -10,41 +11,41 @@ export const register = async (req: Request, res: Response) => {
     const validatedData = registerSchema.parse(req.body);
     const authData = await authService.register(validatedData);
 
-    return res.status(201).json(authData);
+    return sendSuccess(res, 'Registrasi berhasil', authData, 201);
   } catch (error: any) {
     if (error instanceof ZodError) {
-      return res.status(400).json({ message: error.issues[0].message });
+      return sendError(res, error.issues[0].message, 400);
     }
     if (error.message === "Email sudah terdaftar") {
-      return res.status(409).json({ message: error.message });
+      return sendError(res, error.message, 409);
     }
 
     console.error("Register Error:", error);
-    return res.status(500).json({ message: "Terjadi kesalahan pada server" });
+    return sendError(res, "Terjadi kesalahan pada server", 500);
   }
 };
 
 
-export const login = async (req: Request<{}, {}, LoginRequest>, res: Response<AuthResponse | { message: any }>) => {
+export const login = async (req: Request<{}, {}, LoginRequest>, res: Response) => {
   try {
     // Validasi input menggunakan Zod
     const validatedData = loginSchema.parse(req.body);
 
     const authData = await authService.authenticate(validatedData);
 
-    return res.status(200).json(authData);
+    return sendSuccess(res, 'Login berhasil', authData, 200);
   } catch (error: any) {
     if (error instanceof ZodError) {
       const errorMessage = error.issues[0].message;
-      return res.status(400).json({ message: errorMessage });
+      return sendError(res, errorMessage, 400);
     }
 
-    // Menangani error spesifik dari service (Email tidak terdaftar / Password salah)
+    // Menangani error spesifik dari service jika Email tidak terdaftar / Password salah
     if (error.message === "Email tidak terdaftar" || error.message === "Kata sandi salah") {
-      return res.status(401).json({ message: error.message });
+      return sendError(res, error.message, 401);
     }
 
     console.error("Login Error:", error);
-    return res.status(500).json({ message: "Terjadi kesalahan pada server" });
+    return sendError(res, "Terjadi kesalahan pada server", 500);
   }
 };

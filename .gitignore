@@ -94,3 +94,5 @@ temp/
 
 # Prisma
 prisma/migrations/
+
+GEMINI.md
