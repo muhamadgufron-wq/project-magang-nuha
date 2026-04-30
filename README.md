@@ -87,9 +87,3 @@ server/
 3. Jalankan aplikasi: `npm run dev`.
 4. Akses di `http://localhost:3000`.
 
----
-
-## 📝 Standar Pengembangan (Berdasarkan GEMINI.md)
-- **TypeScript:** Strict typing digunakan di seluruh codebase.
-- **Documentation:** JSDoc wajib ditambahkan pada setiap fungsi dan hook utama.
-- **Clean Code:** Pemisahan antara logika bisnis (Service/Hook) dan presentasi (UI Components).

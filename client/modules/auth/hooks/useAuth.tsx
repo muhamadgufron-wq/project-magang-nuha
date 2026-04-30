@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '@/types/auth';
+import { User } from '../types';
 import { useRouter } from 'next/navigation';
 import { getCookie, setCookie, eraseCookie } from '@/utils/cookies';
 
@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     eraseCookie("token");
     eraseCookie("user");
     setUser(null);
-    router.push("/login");
+    router.push("/");
   };
 
   return (

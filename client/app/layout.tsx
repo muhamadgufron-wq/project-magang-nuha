@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider } from "@/modules/auth";
 import Providers from "./providers";
 
 
@@ -12,7 +12,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Login Page",
+  title: "Healthcare - Booking Dokter Online Dengan Mudah",
   description: "Halaman Login Modern dengan Poppins",
 };
 
