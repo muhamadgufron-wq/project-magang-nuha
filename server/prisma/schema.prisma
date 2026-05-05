@@ -58,6 +58,7 @@ model Doctor {
   id               Int      @id @default(autoincrement())
   uuid             String   @default(uuid()) @unique
   user_id          Int      @unique
+  initials         String   @unique @db.VarChar(10)
   specialization   String?   @db.VarChar(100)
   practice_number  String?   @db.VarChar(50)
   description      String?   @db.Text

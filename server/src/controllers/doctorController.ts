@@ -15,14 +15,14 @@ export const getDoctors = async (req: Request, res: Response) => {
 
 export const getDoctorById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const doctor = await doctorService.getDoctorById(Number(id));
+    const { id } = req.params; // id ini sekarang adalah UUID
+    const doctor = await doctorService.getDoctorByUuid(id);
     if (!doctor) {
       return sendError(res, "Dokter tidak ditemukan", 404);
     }
     return sendSuccess(res, "Berhasil mengambil detail dokter", doctor);
   } catch (error) {
-    console.error("GetDoctorById Error:", error);
+    console.error("GetDoctorByUuid Error:", error);
     return sendError(res, "Gagal mengambil detail dokter");
   }
 };

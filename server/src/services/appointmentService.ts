@@ -47,14 +47,8 @@ export const createRegistration = async (data: {
       }
     }
 
-    // Ambil inisial nama dokter (abaikan gelar dr. atau Dr.)
-    const doctorName = schedule.doctor.user.name;
-    const initials = doctorName
-      .split(' ')
-      .filter((n: string) => !n.toLowerCase().startsWith('dr'))
-      .map((n: string) => n[0])
-      .join('')
-      .toUpperCase();
+    // Ambil inisial nama dokter dari master data (tabel Doctor)
+    const initials = schedule.doctor.initials;
 
     // Hitung nomor antrean GLOBAL berikutnya berdasarkan total seluruh pendaftaran pada hari yang sama
     const globalQueueCount = await tx.registered.count({

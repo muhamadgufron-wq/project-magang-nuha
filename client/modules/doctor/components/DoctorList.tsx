@@ -85,37 +85,33 @@ export const DoctorList: React.FC = () => {
         </div>
 
         {/* Doctor Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {doctors
             .filter(d => d.user.name.toLowerCase().includes(searchName.toLowerCase()))
             .map((doctor: any) => (
             <div 
               key={doctor.id} 
-              className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow group"
+              className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all group flex flex-col aspect-square"
             >
-              {/* Image Placeholder */}
-              <div className="aspect-[4/3] bg-gray-100 relative overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center text-gray-300">
-                  <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 text-3xl font-bold">
-                    {doctor.user.name.charAt(4).toLowerCase()}
-                  </div>
+              {/* Image / Avatar Area - Flexible space */}
+              <div className="flex-1 bg-emerald-50 relative flex items-center justify-center overflow-hidden">
+                <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-emerald-600 text-4xl font-black shadow-sm group-hover:scale-110 transition-transform duration-300">
+                  {doctor.user.name.charAt(doctor.user.name.toLowerCase().startsWith('dr') ? 4 : 0).toUpperCase()}
                 </div>
               </div>
 
-              <div className="p-5">
-                <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full uppercase tracking-wider mb-3">
+              {/* Content Area - Fixed at bottom */}
+              <div className="p-6 text-center">
+                <span className="inline-block px-3 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full uppercase tracking-wider mb-2">
                   {doctor.specialization || "Umum"}
                 </span>
-                <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-emerald-700 transition-colors line-clamp-1">
+                <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-emerald-700 transition-colors line-clamp-1">
                   {doctor.user.name}
                 </h3>
-                <p className="text-xs text-gray-500 mb-6">
-                  {doctor.description || `Spesialis Ahli ${doctor.specialization || "Umum"}`}
-                </p>
 
                 <Link 
-                  href={`/doctors/${doctor.id}`}
-                  className="flex items-center justify-center gap-2 w-full bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800 transition-all"
+                  href={`/doctors/${doctor.uuid}`}
+                  className="inline-flex items-center justify-center gap-2 w-full bg-emerald-700 text-white py-3 rounded-xl text-sm font-bold hover:bg-emerald-800 transition-all shadow-sm active:scale-[0.98]"
                 >
                   <Calendar className="w-4 h-4" />
                   Lihat Jadwal

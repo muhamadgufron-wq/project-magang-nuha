@@ -31,6 +31,7 @@ async function main() {
     {
       name: 'dr. Asep Kurniawan',
       email: 'asep@healthcare.com',
+      initials: 'AK',
       specialization: 'Ahli Jantung',
       practice_number: 'STR/2026/001',
       description: 'Dokter spesialis jantung dengan pengalaman lebih dari 15 tahun dalam menangani kasus kardiologi kompleks.'
@@ -38,6 +39,7 @@ async function main() {
     {
       name: 'dr. Budi Santoso',
       email: 'budi@healthcare.com',
+      initials: 'BS',
       specialization: 'Ahli Penyakit Dalam',
       practice_number: 'STR/2026/002',
       description: 'Spesialis penyakit dalam yang fokus pada pengobatan preventif dan manajemen penyakit kronis.'
@@ -53,6 +55,7 @@ async function main() {
         role: 'DOCTOR',
         doctor: {
           create: {
+            initials: doc.initials,
             specialization: doc.specialization,
             practice_number: doc.practice_number,
             description: doc.description,

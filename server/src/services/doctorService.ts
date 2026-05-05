@@ -18,9 +18,9 @@ export const getAllDoctors = async (specialization?: string) => {
   });
 };
 
-export const getDoctorById = async (id: number) => {
+export const getDoctorByUuid = async (uuid: string) => {
   return await prisma.doctor.findUnique({
-    where: { id },
+    where: { uuid },
     include: {
       user: {
         select: {

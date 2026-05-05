@@ -54,7 +54,7 @@ export const DoctorDetail: React.FC = () => {
               <p className="text-emerald-600 font-semibold mb-6">{doctor.specialization || "Umum"}</p>
 
               <button 
-                onClick={() => router.push(`/doctors/${doctor.id}/booking`)}
+                onClick={() => router.push(`/doctors/${doctor.uuid}/booking`)}
                 className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold hover:bg-emerald-700 transition-colors"
               >
                 Buat Janji Temu
