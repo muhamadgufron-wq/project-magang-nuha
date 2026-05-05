@@ -7,14 +7,153 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ================= MODELS =================
+
 model User {
-  id        String   @id @default(uuid())
-  username  String   @unique
-  email     String   @unique
-  password  String
-  role      String   @default("user")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt @default(now())
+  id         Int       @id @default(autoincrement())
+  uuid       String    @default(uuid()) @unique
+  name       String    @db.VarChar(100)
+  email      String    @unique @db.VarChar(100)
+  password   String    @db.VarChar(255)
+  role       String    @default("PATIENT") @db.VarChar(20) // PATIENT, ADMIN, DOCTOR
+  phone      String?   @db.VarChar(20)
+  is_vip     Boolean   @default(false)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  // Relations
+  patient Patient?
+  doctor  Doctor?
+
+  // Relasi untuk log perubahan jadwal
+  scheduleChangeLogs ScheduleChangeLog[]
 
   @@map("users")
+}
+
+model Patient {
+  id               Int      @id @default(autoincrement())
+  uuid             String   @default(uuid()) @unique
+  user_id          Int      @unique
+  name             String   @db.VarChar(255)
+  gender           String?  @db.VarChar(20)
+  birth_date       DateTime? @db.Date
+  phone            String?  @db.VarChar(20)
+  address          String?   @db.Text
+  identity_number  String?  @db.VarChar(50)
+  insurance_type   String?  @db.VarChar(50)
+  insurance_number String?  @db.VarChar(50)
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  // Relations
+  user          User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  registrations Registered[]
+
+  @@map("patients")
+}
+
+model Doctor {
+  id               Int      @id @default(autoincrement())
+  uuid             String   @default(uuid()) @unique
+  user_id          Int      @unique
+  specialization   String?   @db.VarChar(100)
+  practice_number  String?   @db.VarChar(50)
+  description      String?   @db.Text
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  // Relations
+  user      User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  schedules DoctorSchedule[]
+
+  @@map("doctors")
+}
+
+model DoctorSchedule {
+  id             Int            @id @default(autoincrement())
+  uuid           String         @default(uuid()) @unique
+  doctor_id      Int
+  date           DateTime       @db.Date
+  start_time     DateTime       @db.Time
+  end_time       DateTime       @db.Time
+  vip_quota      Int            @default(0)
+  general_quota  Int            @default(0)
+  booked_vip     Int            @default(0)
+  booked_general Int            @default(0)
+  status         String         @default("ACTIVE") @db.VarChar(20) // ACTIVE, CANCELLED, MODIFIED
+  notes          String?        @db.Text
+  created_at     DateTime       @default(now())
+  updated_at     DateTime       @updatedAt
+
+  // Relations
+  doctor               Doctor              @relation(fields: [doctor_id], references: [id], onDelete: Cascade)
+  registrations        Registered[]
+  reschedulesAsOldSlot RescheduleHistory[] @relation("OldSlot")
+  reschedulesAsNewSlot RescheduleHistory[] @relation("NewSlot")
+  changeLogs           ScheduleChangeLog[]
+
+  @@map("doctor_schedules")
+}
+
+model Registered {
+  id                 Int           @id @default(autoincrement())
+  uuid               String        @default(uuid()) @unique
+  patient_id         Int
+  slot_id            Int           
+  schedule           DateTime      
+  reschedule_from_id Int?
+  status             String        @default("BOOKED") @db.VarChar(20) // BOOKED, REGISTERED
+  booking_code       String        @unique @db.VarChar(20)
+  patient_type       String        @default("GENERAL") @db.VarChar(20) // VIP, GENERAL
+  created_at         DateTime      @default(now())
+  updated_at         DateTime      @updatedAt
+
+  // Relations
+  patient         Patient             @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  doctor_schedule DoctorSchedule      @relation(fields: [slot_id], references: [id])
+  rescheduleFrom  Registered?         @relation("RescheduleHistoryRel", fields: [reschedule_from_id], references: [id])
+  rescheduleTo    Registered[]        @relation("RescheduleHistoryRel")
+  rescheduleLogs  RescheduleHistory[] 
+
+  @@map("registered")
+}
+
+model RescheduleHistory {
+  id           Int              @id @default(autoincrement())
+  uuid         String           @default(uuid()) @unique
+  bookings_id  Int
+  old_slot_id  Int
+  new_slot_id  Int
+  requested_at DateTime         @default(now())
+  processed_at DateTime?
+  status       String           @default("PENDING") @db.VarChar(20) // PENDING, APPROVED, REJECTED
+  reason       String?          @db.VarChar(255)
+
+  // Relations
+  booking Registered     @relation(fields: [bookings_id], references: [id], onDelete: Cascade)
+  oldSlot DoctorSchedule @relation("OldSlot", fields: [old_slot_id], references: [id])
+  newSlot DoctorSchedule @relation("NewSlot", fields: [new_slot_id], references: [id])
+
+  @@map("reschedule_history")
+}
+
+model ScheduleChangeLog {
+  id                 Int       @id @default(autoincrement())
+  uuid               String    @default(uuid()) @unique
+  doctor_schedule_id Int
+  changed_by         Int       
+  old_start_time     DateTime? @db.Time
+  old_end_time       DateTime? @db.Time
+  new_start_time     DateTime? @db.Time
+  new_end_time       DateTime? @db.Time
+  change_reason      String?   @db.Text
+  created_at         DateTime  @default(now())
+
+  // Relations
+  doctor_schedule DoctorSchedule @relation(fields: [doctor_schedule_id], references: [id], onDelete: Cascade)
+  changer         User           @relation(fields: [changed_by], references: [id])
+
+  @@map("schedule_change_logs")
 }

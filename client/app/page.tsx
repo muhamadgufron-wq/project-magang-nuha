@@ -3,10 +3,7 @@
 import React from 'react';
 import Navbar from '@/components/layout/Navbar/Navbar';
 import Footer from '@/components/layout/Footer/Footer';
-import Hero from '@/components/landing/Hero/Hero';
-import Stats from '@/components/landing/Stats/Stats';
-import Services from '@/components/landing/Services/Services';
-import CTA from '@/components/landing/CTA/CTA';
+import { Hero, Stats, Services, CTA } from "@/modules/landing";
 
 /**
  * Landing Page utama aplikasi Healthcare.

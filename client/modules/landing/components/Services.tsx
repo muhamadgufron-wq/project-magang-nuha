@@ -5,7 +5,7 @@ import { ArrowRight, Calendar, Video, FileText } from 'lucide-react';
 /**
  * Services component untuk menampilkan daftar layanan pada Landing Page.
  */
-const Services = () => {
+export const Services = () => {
   return (
     <section className="py-24 px-6 lg:px-12 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row justify-between items-end mb-14 gap-6">
@@ -63,5 +63,3 @@ const Services = () => {
     </section>
   );
 };
-
-export default Services;

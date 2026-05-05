@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 class AuthService {
   
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    const { username, email, password } = data;
+    const { name, email, password, phone, role } = data;
 
     // Cek apakah email sudah terdaftar
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -17,29 +17,54 @@ class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Simpan ke database
-    const user = await prisma.user.create({
-      data: {
-        username,
-        email,
-        password: hashedPassword,
-      },
+    // Simpan ke database menggunakan Transaction untuk memastikan User dan Profile (Patient/Doctor) dibuat bersamaan
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          name,
+          email,
+          password: hashedPassword,
+          phone,
+          role,
+        },
+      });
+
+      // Buat profil berdasarkan role
+      if (role === 'PATIENT') {
+        await tx.patient.create({
+          data: {
+            user_id: user.id,
+            name: user.name,
+            phone: user.phone,
+          },
+        });
+      } else if (role === 'DOCTOR') {
+        await tx.doctor.create({
+          data: {
+            user_id: user.id,
+          },
+        });
+      }
+
+      return user;
     });
 
     // Buat token JWT
     const secret = process.env.JWT_SECRET || 'fallback_secret';
     const token = jwt.sign(
-      { id: user.id, email: user.email, username: user.username },
+      { id: result.id, uuid: result.uuid, email: result.email, role: result.role },
       secret,
       { expiresIn: (process.env.JWT_EXPIRES_IN || '4h') as any } 
     );
 
     return {
       user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        createdAt: user.createdAt,
+        id: result.id,
+        uuid: result.uuid,
+        name: result.name,
+        email: result.email,
+        role: result.role,
+        is_vip: result.is_vip,
       },
       token,
     };
@@ -70,7 +95,7 @@ class AuthService {
     // Buat token JWT
     const secret = process.env.JWT_SECRET || 'fallback_secret';
     const token = jwt.sign(
-      { id: user.id, email: user.email, username: user.username },
+      { id: user.id, uuid: user.uuid, email: user.email, role: user.role },
       secret,
       { expiresIn: (process.env.JWT_EXPIRES_IN || '4h') as any }
     );
@@ -78,9 +103,11 @@ class AuthService {
     return {
       user: {
         id: user.id,
-        username: user.username,
+        uuid: user.uuid,
+        name: user.name,
         email: user.email,
-        createdAt: user.createdAt,
+        role: user.role,
+        is_vip: user.is_vip,
       },
       token,
     };

@@ -3,20 +3,56 @@
 import React from 'react';
 import Link from 'next/link';
 import { useAuth } from "@/modules/auth";
-import { NAV_LINKS } from './utils/constants';
-
 import Image from 'next/image';
+import Swal from 'sweetalert2';
+import { usePathname } from 'next/navigation';
 
-/**
- * Komponen Navbar untuk navigasi utama aplikasi.
- * Mendeteksi status login user untuk menampilkan tombol yang sesuai.
- */
 const Navbar = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const pathname = usePathname();
+
+  const handleLogout = () => {
+    Swal.fire({
+      title: 'Apakah anda yakin?',
+      text: "Anda akan keluar dari sesi ini!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Ya, Keluar!',
+      cancelButtonText: 'Batal'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        logout();
+        Swal.fire({
+          title: 'Berhasil!',
+          text: 'Anda telah keluar.',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      }
+    });
+  };
+
+  // Menu untuk Guest (Belum Login)
+  const guestLinks = [
+    { label: "Beranda", href: "/" },
+    { label: "Temukan Dokter", href: "/doctors" },
+  ];
+
+  // Menu untuk User (Sudah Login) - Sesuai Desain Beranda.png
+  const userLinks = [
+    { label: "Temukan Dokter", href: "/home" },
+    { label: "Booking", href: "/appointments" },
+  ];
+
+  const currentLinks = user ? userLinks : guestLinks;
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 lg:px-12">
-      <div className="max-w-6xl mx-auto flex items-center justify-between py-5">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 px-6 lg:px-12">
+      <div className="max-w-7xl mx-auto flex items-center justify-between py-4">
+        {/* Logo */}
         <div className="flex items-center gap-2">
           <Link href="/" className="flex items-center gap-2">
             <Image 
@@ -26,33 +62,55 @@ const Navbar = () => {
               height={32} 
               className="object-contain"
             />
-            <span className="text-xl font-bold text-emerald-700 tracking-tight">Healthcare</span>
+            <span className="text-xl font-bold text-emerald-800 tracking-tight">Healthcare</span>
           </Link>
         </div>
         
-        <nav className="hidden lg:flex items-center gap-8 text-sm font-medium text-gray-600">
-          {NAV_LINKS.map((link) => (
-            <Link 
-              key={link.label}
-              href={link.href} 
-              className={`${link.isActive ? 'text-emerald-700 border-b-2 border-emerald-700 pb-1' : 'hover:text-emerald-700 transition-colors'}`}
-            >
-              {link.label}
-            </Link>
-          ))}
+        {/* Dynamic Navigation Links */}
+        <nav className="hidden lg:flex items-center gap-10 text-sm font-semibold">
+          {currentLinks.map((link) => {
+            let isActive = pathname === link.href;
+            
+            // Special cases for active states
+            if (link.label === "Booking") {
+              if (pathname === "/appointments") {
+                isActive = true;
+              }
+            }
+            
+            if (link.label === "Temukan Dokter") {
+              if (pathname === "/home" || pathname.startsWith("/doctors")) {
+                isActive = true;
+              }
+            }
+
+            return (
+              <Link 
+                key={link.label}
+                href={link.href} 
+                className={`transition-colors ${isActive ? 'text-emerald-700' : 'text-gray-500 hover:text-emerald-700'}`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
 
+        {/* Right Actions */}
         <div className="flex items-center gap-4">
           {user ? (
-            <Link href="/home" className="px-6 py-2.5 bg-emerald-700 text-white text-sm font-bold rounded-full hover:bg-emerald-800 transition-colors shadow-sm">
-              Dashboard
-            </Link>
+            <button 
+              onClick={handleLogout}
+              className="px-8 py-2.5 bg-red-600 text-white text-sm font-bold rounded-full hover:bg-red-700 transition-colors"
+            >
+              Logout
+            </button>
           ) : (
             <>
               <Link href="/register" className="text-sm font-bold text-emerald-700 hover:text-emerald-800 hidden sm:block px-4">
                 Daftar
               </Link>
-              <Link href="/login" className="px-6 py-2.5 bg-emerald-700 text-white text-sm font-bold rounded-full hover:bg-emerald-800 transition-colors shadow-sm">
+              <Link href="/login" className="px-10 py-2.5 bg-emerald-700 text-white text-sm font-bold rounded-full hover:bg-emerald-800 transition-colors shadow-sm">
                 Masuk
               </Link>
             </>

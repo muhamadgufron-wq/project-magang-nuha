@@ -29,7 +29,7 @@ export const RegisterForm = () => {
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      username: "",
+      name: "",
       email: "",
       password: ""
     }
@@ -37,7 +37,7 @@ export const RegisterForm = () => {
 
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterFormValues) => {
-      return await registerUser(data.username, data.email, data.password);
+      return await registerUser(data.name, data.email, data.password);
     },
     onSuccess: (data) => {
       authLogin(data.token, data.user);
@@ -59,8 +59,8 @@ export const RegisterForm = () => {
       
       if (msg === "Email sudah terdaftar") {
         setError("email", { type: "manual", message: msg });
-      } else if (msg.includes("Username")) {
-        setError("username", { type: "manual", message: msg });
+      } else if (msg.toLowerCase().includes("nama")) {
+        setError("name", { type: "manual", message: msg });
       } else {
         Swal.fire({
           icon: 'error',
@@ -89,17 +89,17 @@ export const RegisterForm = () => {
           <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div className="space-y-4">
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                  Username
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Nama Lengkap
                 </label>
                 <input
-                  id="username"
+                  id="name"
                   type="text"
-                  {...register("username")}
-                  className={`block w-full px-4 py-3 rounded-xl border ${errors.username ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-emerald-500'} text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 sm:text-sm`}
-                  placeholder="Masukan username"
+                  {...register("name")}
+                  className={`block w-full px-4 py-3 rounded-xl border ${errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-emerald-500'} text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 sm:text-sm`}
+                  placeholder="Masukan nama lengkap anda"
                 />
-                {errors.username && <p className="mt-1 text-xs text-red-500">{errors.username.message}</p>}
+                {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
               </div>
               <div>
                 <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 mb-1">

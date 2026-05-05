@@ -1,89 +1,76 @@
-# Modern Login Page - Fullstack (Next.js & Express)
+# Healthcare Booking System - Fullstack (Next.js & Express)
 
-Aplikasi autentikasi modern yang dibangun dengan arsitektur terpisah (Client-Server), mengutamakan performa tinggi, validasi ketat, dan pengalaman pengguna yang mulus.
+Sistem manajemen layanan kesehatan modern yang memungkinkan pasien untuk menemukan dokter, melihat jadwal praktik rutin, dan melakukan pendaftaran janji temu secara online dengan mudah.
 
-## 🚀 Teknologi Utama
+## 🚀 Fitur Utama
 
-### Frontend (Client)
-- **Framework:** Next.js (App Router)
-- **State Management:** TanStack Query v5 (React Query)
-- **Form Management:** React Hook Form
-- **Validation:** Zod (Schema-based validation)
-- **Styling:** Tailwind CSS
-- **Authentication:** Cookies-based session management
-- **UI Components:** SweetAlert2 for interactive notifications
-
-### Backend (Server)
-- **Runtime:** Node.js (Express)
-- **Language:** TypeScript
-- **ORM:** Prisma
-- **Database:** PostgreSQL/MySQL (via Prisma)
-- **Security:** JWT (JSON Web Token) & Bcrypt for hashing
+1.  **Sistem Booking Lengkap**: Pendaftaran janji temu dengan validasi kuota otomatis (VIP/Umum) dan pembuatan kode booking unik per hari.
+2.  **Pencarian Dokter & Filter**: Menemukan dokter berdasarkan nama atau spesialisasi dengan antarmuka yang intuitif.
+3.  **Jadwal Praktik Mingguan**: Visualisasi jadwal praktik rutin dokter (Senin - Minggu) yang bersih dan minimalis.
+4.  **Dashboard Janji Temu**: Halaman terpusat untuk pasien mengelola pendaftaran aktif dan melihat riwayat berobat.
+5.  **Autentikasi Berbasis Role**: Sistem login dan registrasi terintegrasi yang otomatis membuat profil Pasien atau Dokter.
 
 ---
 
-## 📂 Struktur Folder Detail
+## 📂 Arsitektur & Struktur Folder
+
+Proyek ini menggunakan **Modular Architecture** pada sisi client untuk pemisahan kekhawatiran (*Separation of Concerns*) yang lebih baik.
 
 ### 1. Client (`/client`)
 ```text
 client/
-├── app/                  # Next.js App Router
-│   ├── (auth)/           # Route Group untuk Autentikasi
-│   │   ├── login/        # Halaman Login
-│   │   └── register/     # Halaman Register
-│   ├── layout.tsx        # Root Layout & Provider Injection
-│   ├── page.tsx          # Halaman Utama (Terproteksi)
-│   └── providers.tsx     # Konfigurasi TanStack Query Provider
-├── hooks/
-│   └── useAuth.tsx       # Global Auth Context & Hook (Cookie-based)
-├── services/
-│   └── authService.ts    # Komunikasi API (Login/Register) dengan JSDoc
-├── types/
-│   └── auth.ts           # Definisi tipe TypeScript untuk data Auth
-├── utils/
-│   ├── cookies.ts        # Utilitas manajemen Cookie (get, set, erase)
-│   └── validation.ts     # Skema validasi Zod (Shared across forms)
-├── proxy.ts              # Middleware/Proxy untuk Auth Guard (Server-side)
-└── public/               # Asset statis (SVG, Images)
+├── app/                  # Next.js App Router (Thin Pages)
+│   ├── doctors/          # Fitur Pencarian & Detail Dokter
+│   ├── appointments/     # Manajemen Janji Temu Pasien
+│   └── (auth)/           # Autentikasi (Login/Register)
+├── modules/              # Core Logic per Fitur (Modular)
+│   ├── doctor/           # Hooks, Services, Types, Components (Doctor)
+│   ├── appointment/      # Hooks, Services, Types, Components (Booking)
+│   ├── auth/             # Manajemen Sesi & User
+│   └── landing/          # Komponen Statis Landing Page (Modularized)
+├── components/           # UI Shared (Layout: Navbar, Footer)
+└── utils/                # Utilitas (Cookies, Validation, Date-fns helpers)
 ```
 
 ### 2. Server (`/server`)
 ```text
 server/
-├── prisma/               # Konfigurasi Database & Schema Prisma
+├── prisma/               # Schema Database (Sync with latest ERD)
 ├── src/
-│   ├── config/           # Konfigurasi koneksi (Prisma Client)
-│   ├── controllers/      # Logika penanganan request API
-│   ├── routes/           # Definisi endpoint API (/auth/login, etc)
-│   ├── services/         # Logika bisnis & manipulasi database
-│   ├── types/            # Definisi tipe TypeScript backend
-│   └── validations/      # Validasi input sisi server (Zod/Joi)
-└── .env                  # Environment Variables (Database URL, Secret Key)
+│   ├── controllers/      # Penanganan Request (Auth, Doctor, Appointment)
+│   ├── services/         # Logika Bisnis & DB Transaction (Queue Logic)
+│   ├── routes/           # Endpoint API terproteksi JWT
+│   └── validations/      # Skema validasi input (Zod)
 ```
 
 ---
 
-## 🛡️ Fitur Keamanan & UX
+## 🛠️ Teknologi Utama
 
-1.  **Auth Guard (Proxy/Middleware):** Proteksi rute di sisi server. User yang belum login tidak bisa mengakses `/`, dan user yang sudah login tidak bisa kembali ke `/login`.
-2.  **Uncontrolled Forms:** Menggunakan React Hook Form untuk meminimalkan re-render, membuat input terasa sangat responsif.
-3.  **Server-side Validation:** Validasi ganda (Client & Server) menggunakan Zod untuk menjamin integritas data.
-4.  **Cookie Persistence:** Sesi tetap tersimpan meskipun browser ditutup (24 jam expiry).
-5.  **TanStack Engine:** Manajemen status loading dan error yang otomatis dan reaktif.
+- **Frontend:** Next.js 15+, TypeScript, Tailwind CSS, Lucide React.
+- **State Management:** TanStack Query v5 (React Query).
+- **Time Management:** Date-fns (Safe parsing & weekly formatting).
+- **Backend:** Node.js (Express), TypeScript, Prisma ORM.
+- **Database:** PostgreSQL (Mendukung transaksi untuk validasi kuota).
 
 ---
 
-## 🛠️ Cara Menjalankan
+## 🛡️ Keamanan & Validasi
 
-### Backend
-1. Masuk ke folder `server`.
-2. Instal dependensi: `npm install`.
-3. Setup `.env` dan jalankan migrasi database: `npx prisma migrate dev`.
-4. Jalankan server: `npm run dev`.
+- **JWT Authentication**: Penggunaan Token untuk akses API terproteksi.
+- **Strict Typing**: Implementasi TypeScript di seluruh proyek untuk keamanan tipe data.
+- **Double Validation**: Validasi skema (Zod) dilakukan di sisi Client (Form) dan Server (API).
+- **Database Transactions**: Menjamin integritas data pendaftaran saat terjadi akses konkuren pada kuota dokter.
 
-### Frontend
-1. Masuk ke folder `client`.
-2. Instal dependensi: `npm install`.
-3. Jalankan aplikasi: `npm run dev`.
-4. Akses di `http://localhost:3000`.
+---
 
+## ⚙️ Cara Instalasi
+
+### 1. Persiapan Database
+- Masuk ke folder `server`, buat file `.env` dan isi `DATABASE_URL`.
+- Jalankan: `npx prisma migrate dev` dan `npm run seed`.
+
+### 2. Menjalankan Aplikasi
+- **Server**: `cd server && npm install && npm run dev`.
+- **Client**: `cd client && npm install && npm run dev`.
+- Akses aplikasi di `http://localhost:3000`.

@@ -4,7 +4,7 @@ import { Users, BriefcaseMedical, ThumbsUp } from 'lucide-react';
 /**
  * Stats component untuk menampilkan data statistik pada Landing Page.
  */
-const Stats = () => {
+export const Stats = () => {
   return (
     <section className="bg-[#0B6B46] py-16 mt-8">
       <div className="max-w-7xl mx-auto px-6 lg:px-12 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -27,5 +27,3 @@ const Stats = () => {
     </section>
   );
 };
-
-export default Stats;

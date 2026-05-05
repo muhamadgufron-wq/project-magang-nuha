@@ -13,20 +13,25 @@ export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
-  const isHomePage = pathname.startsWith('/home');
   const isLandingPage = pathname === '/';
+  
+  // Rute yang membutuhkan login
+  const isProtectedPage = 
+    pathname.startsWith('/home') || 
+    pathname.startsWith('/appointments') ||
+    pathname.includes('/booking'); // Melindungi rute booking di dalam /doctors/[id]/booking
 
-  // 1. Jika mencoba mengakses halaman login/register saat SUDAH login
-  if (isAuthPage && token) {
+  // 1. Jika mencoba mengakses halaman login/register ATAU landing page saat SUDAH login
+  if ((isAuthPage || isLandingPage) && token) {
     return NextResponse.redirect(new URL('/home', request.url));
   }
 
-  // 2. Jika mencoba mengakses halaman /home saat BELUM login
-  if (isHomePage && !token) {
+  // 2. Jika mencoba mengakses halaman terproteksi saat BELUM login
+  if (isProtectedPage && !token) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // 3. Biarkan Landing Page (/) terbuka untuk semua orang
+  // 3. Biarkan rute lainnya (Landing page jika belum login, Daftar Dokter, Detail Dokter) terbuka
   return NextResponse.next();
 }
 

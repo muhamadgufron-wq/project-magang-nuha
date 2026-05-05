@@ -1,9 +1,12 @@
 export interface User {
-  id: string;
-  username: string;
+  id: number;
+  uuid: string;
+  name: string;
   email: string;
-  role: 'admin' | 'user';
-  createdAt: Date;
+  role: string;
+  phone?: string;
+  is_vip: boolean;
+  created_at: Date;
 }
 
 export interface LoginRequest {
@@ -12,12 +15,21 @@ export interface LoginRequest {
 }
 
 export interface RegisterRequest {
-  username: string;
+  name: string;
   email: string;
   password: string;
+  phone?: string;
+  role: string;
 }
 
 export interface AuthResponse {
-  user: Omit<User, 'role'>;
+  user: {
+    id: number;
+    uuid: string;
+    name: string;
+    email: string;
+    role: string;
+    is_vip: boolean;
+  };
   token: string;
 }

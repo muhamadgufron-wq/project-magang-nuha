@@ -6,7 +6,7 @@ import { PlayCircle, CheckCircle, Activity } from 'lucide-react';
  * Hero component untuk Landing Page.
  * Menampilkan pesan utama, CTA, dan ilustrasi futuristik.
  */
-const Hero = () => {
+export const Hero = () => {
   return (
     <section className="px-6 py-12 lg:px-12 lg:py-24 max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
       <div className="flex-1 space-y-6">
@@ -20,7 +20,7 @@ const Hero = () => {
           Rasakan perawatan medis yang dirancang ulang dengan dokter ahli, rekam medis digital, dan dukungan telekonsultasi 24 jam sehari.
         </p>
         <div className="flex flex-wrap items-center gap-4 pt-4">
-          <Link href="/login" className="px-7 py-3.5 bg-emerald-700 text-white font-semibold rounded-full hover:bg-emerald-800">
+          <Link href="/doctors" className="px-7 py-3.5 bg-emerald-700 text-white font-semibold rounded-full hover:bg-emerald-800">
             Booking Jadwal
           </Link>
           <button className="flex items-center gap-2 px-7 py-3.5 border-2 border-gray-200 text-gray-700 font-semibold rounded-full hover:border-emerald-700 hover:text-emerald-700 transition-colors bg-white">
@@ -42,7 +42,7 @@ const Hero = () => {
       </div>
 
       <div className="flex-1 w-full max-w-lg relative mt-10 lg:mt-0">
-        <div className="w-full aspect-square bg-[#07131C] rounded-[3rem] relative overflow-hidden shadow-2xl flex flex-col items-center justify-center border-8 border-emerald-900/20">
+        <div className="w-full aspect-square bg-[#07131C] rounded-[3rem] relative overflow-hidden  flex flex-col items-center justify-center border-8 border-emerald-900/20">
           <div className="absolute inset-0 opacity-20">
             <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-emerald-400"></div>
             <div className="absolute top-0 bottom-0 left-1/2 w-[2px] bg-emerald-400"></div>
@@ -58,7 +58,7 @@ const Hero = () => {
           </div>
           <h3 className="z-10 text-2xl font-black text-emerald-300 tracking-[0.2em]">HEALTHCARE</h3>
           
-          <div className="absolute bottom-6 left-6 right-6 bg-white p-5 rounded-2xl flex items-center gap-4 shadow-xl z-20">
+          <div className="absolute bottom-6 left-6 right-6 bg-white p-5 rounded-2xl flex items-center gap-4 z-20">
             <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
               <CheckCircle className="w-7 h-7 text-emerald-600" />
             </div>
@@ -72,5 +72,3 @@ const Hero = () => {
     </section>
   );
 };
-
-export default Hero;

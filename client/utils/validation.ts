@@ -17,9 +17,9 @@ export const loginSchema = z.object({
  * Skema validasi untuk form Register
  */
 export const registerSchema = z.object({
-  username: z
-    .string({ message: "Username wajib diisi" })
-    .min(3, { message: "Username minimal 3 karakter" }),
+  name: z
+    .string({ message: "Nama lengkap wajib diisi" })
+    .min(3, { message: "Nama minimal 3 karakter" }),
   email: z
     .string({ message: "Email wajib diisi" })
     .min(1, { message: "Email tidak boleh kosong" })

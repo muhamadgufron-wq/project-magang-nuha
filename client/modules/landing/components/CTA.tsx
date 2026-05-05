@@ -5,7 +5,7 @@ import { BriefcaseMedical } from 'lucide-react';
 /**
  * CTA (Call to Action) component untuk bagian bawah Landing Page.
  */
-const CTA = () => {
+export const CTA = () => {
   return (
     <section className="px-6 lg:px-12 pb-24 max-w-7xl mx-auto">
       <div className="bg-[#0F172A] rounded-[3rem] p-12 lg:p-20 relative overflow-hidden flex flex-col items-start min-h-[450px] justify-center shadow-2xl">
@@ -30,5 +30,3 @@ const CTA = () => {
     </section>
   );
 };
-
-export default CTA;
