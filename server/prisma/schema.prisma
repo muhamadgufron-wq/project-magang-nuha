@@ -68,8 +68,28 @@ model Doctor {
   // Relations
   user      User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
   schedules DoctorSchedule[]
+  master_schedules DoctorMasterSchedule[]
 
   @@map("doctors")
+}
+
+model DoctorMasterSchedule {
+  id             Int            @id @default(autoincrement())
+  uuid           String         @default(uuid()) @unique
+  doctor_id      Int
+  day_of_week    Int            // 0=Sunday, 1=Monday, ..., 6=Saturday
+  start_time     DateTime       @db.Time
+  end_time       DateTime       @db.Time
+  vip_quota      Int            @default(0)
+  general_quota  Int            @default(0)
+  status         String         @default("ACTIVE") @db.VarChar(20) // ACTIVE, INACTIVE
+  created_at     DateTime       @default(now())
+  updated_at     DateTime       @updatedAt
+
+  // Relations
+  doctor         Doctor         @relation(fields: [doctor_id], references: [id], onDelete: Cascade)
+
+  @@map("doctor_master_schedules")
 }
 
 model DoctorSchedule {

@@ -4,9 +4,19 @@ import { sendSuccess, sendError } from "../utils/response";
 
 export const getDoctors = async (req: Request, res: Response) => {
   try {
-    const { specialization } = req.query;
-    const doctors = await doctorService.getAllDoctors(specialization as string);
-    return sendSuccess(res, "Berhasil mengambil daftar dokter", doctors);
+    const { specialization, page, limit, date } = req.query;
+    
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = parseInt(limit as string) || 10;
+
+    const result = await doctorService.getAllDoctors(
+      specialization as string, 
+      pageNum, 
+      limitNum,
+      date as string
+    );
+    
+    return sendSuccess(res, "Berhasil mengambil daftar dokter", result);
   } catch (error) {
     console.error("GetDoctors Error:", error);
     return sendError(res, "Gagal mengambil daftar dokter");

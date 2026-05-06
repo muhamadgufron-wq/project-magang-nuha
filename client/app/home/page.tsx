@@ -9,7 +9,7 @@ export default function Home() {
     <main className="min-h-screen bg-[#FDFDFD]">
       <Navbar />
       
-      <div className="pt-28 pb-20 px-6 lg:px-12">
+      <div className="pt-24 pb-16 px-6 lg:px-12">
         <div className="max-w-7xl mx-auto">
           <DoctorList />
         </div>
