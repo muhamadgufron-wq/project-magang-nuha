@@ -6,6 +6,7 @@ import { useAuth } from "@/modules/auth";
 import Image from 'next/image';
 import Swal from 'sweetalert2';
 import { usePathname } from 'next/navigation';
+import { ROUTES } from '@/utils/routes';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -37,14 +38,14 @@ const Navbar = () => {
 
   // Menu untuk Guest (Belum Login)
   const guestLinks = [
-    { label: "Beranda", href: "/" },
-    { label: "Temukan Dokter", href: "/doctors" },
+    { label: "Beranda", href: ROUTES.LANDING },
+    { label: "Temukan Dokter", href: ROUTES.DOCTORS },
   ];
 
   // Menu untuk User (Sudah Login) - Sesuai Desain Beranda.png
   const userLinks = [
-    { label: "Temukan Dokter", href: "/home" },
-    { label: "Booking", href: "/appointments" },
+    { label: "Temukan Dokter", href: ROUTES.HOME },
+    { label: "Booking", href: ROUTES.APPOINTMENTS },
   ];
 
   const currentLinks = user ? userLinks : guestLinks;
@@ -54,7 +55,7 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto flex items-center justify-between py-4">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href={ROUTES.LANDING} className="flex items-center gap-2">
             <Image 
               src="/Logo care hijau.png" 
               alt="Healthcare Logo" 
@@ -73,13 +74,13 @@ const Navbar = () => {
             
             // Special cases for active states
             if (link.label === "Booking") {
-              if (pathname === "/appointments") {
+              if (pathname === ROUTES.APPOINTMENTS) {
                 isActive = true;
               }
             }
             
             if (link.label === "Temukan Dokter") {
-              if (pathname === "/home" || pathname.startsWith("/doctors")) {
+              if (pathname === ROUTES.HOME || pathname.startsWith(ROUTES.DOCTORS)) {
                 isActive = true;
               }
             }
@@ -107,10 +108,10 @@ const Navbar = () => {
             </button>
           ) : (
             <>
-              <Link href="/register" className="text-sm font-bold text-emerald-700 hover:text-emerald-800 hidden sm:block px-4">
+              <Link href={ROUTES.REGISTER} className="text-sm font-bold text-emerald-700 hover:text-emerald-800 hidden sm:block px-4">
                 Daftar
               </Link>
-              <Link href="/login" className="px-10 py-2.5 bg-emerald-700 text-white text-sm font-bold rounded-full hover:bg-emerald-800 transition-colors shadow-sm">
+              <Link href={ROUTES.LOGIN} className="px-10 py-2.5 bg-emerald-700 text-white text-sm font-bold rounded-full hover:bg-emerald-800 transition-colors shadow-sm">
                 Masuk
               </Link>
             </>

@@ -1,58 +1,29 @@
-import { getCookie } from "@/utils/cookies";
 import { Registered, CreateRegistrationRequest } from "../types";
+import { apiClient } from "@/utils/api-client";
+import { API_ENDPOINTS } from "@/utils/api-endpoints";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-const getHeaders = () => {
-  const token = getCookie("token");
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
-
+/**
+ * Membuat pendaftaran janji temu baru.
+ */
 export const createRegistration = async (data: CreateRegistrationRequest): Promise<Registered> => {
-  const response = await fetch(`${API_URL}/appointments`, {
-    method: "POST",
-    headers: getHeaders(),
-    body: JSON.stringify(data),
-  });
-
-  const result = await response.json();
-
-  if (!response.ok || !result.success) {
-    throw new Error(result.message || "Gagal membuat janji temu");
-  }
-
-  return result.data;
+  return apiClient.post<Registered>(API_ENDPOINTS.APPOINTMENT.CREATE, data);
 };
 
+/**
+ * Mengambil daftar janji temu milik pengguna yang sedang login.
+ */
 export const fetchMyRegistrations = async (): Promise<Registered[]> => {
-  const response = await fetch(`${API_URL}/appointments/me`, {
-    headers: getHeaders(),
-  });
-
-  const result = await response.json();
-
-  if (!response.ok || !result.success) {
-    throw new Error(result.message || "Gagal mengambil daftar janji temu");
-  }
-
-  return Array.isArray(result.data) ? result.data : [];
+  const data = await apiClient.get<Registered[]>(API_ENDPOINTS.APPOINTMENT.MY_APPOINTMENTS);
+  return Array.isArray(data) ? data : [];
 };
 
+/**
+ * Membatalkan janji temu.
+ * Catatan: Menggunakan PATCH untuk update status.
+ */
 export const cancelRegistration = async (id: number): Promise<Registered> => {
-  const response = await fetch(`${API_URL}/appointments/${id}/status`, {
+  return apiClient.request<Registered>(`${API_ENDPOINTS.APPOINTMENT.CREATE}/${id}/status`, {
     method: "PATCH",
-    headers: getHeaders(),
     body: JSON.stringify({ status: "CANCELLED" }),
   });
-
-  const result = await response.json();
-
-  if (!response.ok || !result.success) {
-    throw new Error(result.message || "Gagal membatalkan janji temu");
-  }
-
-  return result.data;
 };

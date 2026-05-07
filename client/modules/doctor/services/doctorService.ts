@@ -1,6 +1,6 @@
 import { Doctor } from "../types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { apiClient } from "@/utils/api-client";
+import { API_ENDPOINTS } from "@/utils/api-endpoints";
 
 export interface PaginatedDoctors {
   doctors: Doctor[];
@@ -12,45 +12,30 @@ export interface PaginatedDoctors {
   };
 }
 
+/**
+ * Mengambil daftar dokter dengan filter dan pagination.
+ */
 export const fetchDoctors = async (specialization?: string, page: number = 1, limit: number = 10, date?: string): Promise<PaginatedDoctors> => {
-  const url = new URL(`${API_URL}/doctors`);
-  if (specialization) {
-    url.searchParams.append("specialization", specialization);
-  }
-  if (date) {
-    url.searchParams.append("date", date);
-  }
-  url.searchParams.append("page", page.toString());
-  url.searchParams.append("limit", limit.toString());
+  const params = new URLSearchParams();
+  if (specialization) params.append("specialization", specialization);
+  if (date) params.append("date", date);
+  params.append("page", page.toString());
+  params.append("limit", limit.toString());
 
-  const response = await fetch(url.toString());
-  const data = await response.json();
-
-  if (!response.ok || !data.success) {
-    throw new Error(data.message || "Gagal mengambil daftar dokter");
-  }
-
-  return data.data;
+  return apiClient.get<PaginatedDoctors>(`${API_ENDPOINTS.DOCTOR.LIST}?${params.toString()}`);
 };
 
+/**
+ * Mengambil detail dokter berdasarkan UUID.
+ */
 export const fetchDoctorById = async (id: string): Promise<Doctor> => {
-  const response = await fetch(`${API_URL}/doctors/${id}`);
-  const data = await response.json();
-
-  if (!response.ok || !data.success) {
-    throw new Error(data.message || "Gagal mengambil detail dokter");
-  }
-
-  return data.data;
+  return apiClient.get<Doctor>(API_ENDPOINTS.DOCTOR.DETAIL(id));
 };
 
+/**
+ * Mengambil daftar unik spesialisasi dokter.
+ */
 export const fetchSpecializations = async (): Promise<string[]> => {
-  const response = await fetch(`${API_URL}/doctors/specializations`);
-  const data = await response.json();
-
-  if (!response.ok || !data.success) {
-    throw new Error(data.message || "Gagal mengambil daftar spesialisasi");
-  }
-
-  return Array.isArray(data.data) ? data.data : [];
+  const data = await apiClient.get<string[]>(API_ENDPOINTS.DOCTOR.SPECIALIZATIONS);
+  return Array.isArray(data) ? data : [];
 };

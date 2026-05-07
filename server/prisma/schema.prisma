@@ -88,6 +88,7 @@ model DoctorMasterSchedule {
 
   // Relations
   doctor         Doctor         @relation(fields: [doctor_id], references: [id], onDelete: Cascade)
+  schedules      DoctorSchedule[]
 
   @@map("doctor_master_schedules")
 }
@@ -96,6 +97,7 @@ model DoctorSchedule {
   id             Int            @id @default(autoincrement())
   uuid           String         @default(uuid()) @unique
   doctor_id      Int
+  master_schedule_id Int?       // FK ke Master Schedule
   date           DateTime       @db.Date
   start_time     DateTime       @db.Time
   end_time       DateTime       @db.Time
@@ -110,6 +112,7 @@ model DoctorSchedule {
 
   // Relations
   doctor               Doctor              @relation(fields: [doctor_id], references: [id], onDelete: Cascade)
+  master_schedule      DoctorMasterSchedule? @relation(fields: [master_schedule_id], references: [id], onDelete: SetNull)
   registrations        Registered[]
   reschedulesAsOldSlot RescheduleHistory[] @relation("OldSlot")
   reschedulesAsNewSlot RescheduleHistory[] @relation("NewSlot")

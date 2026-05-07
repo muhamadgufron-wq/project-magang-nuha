@@ -50,14 +50,14 @@ export const createRegistration = async (data: {
     // Ambil inisial nama dokter dari master data (tabel Doctor)
     const initials = schedule.doctor.initials;
 
-    // Hitung nomor antrean GLOBAL berikutnya berdasarkan total seluruh pendaftaran pada hari yang sama
-    const globalQueueCount = await tx.registered.count({
+    // Hitung nomor antrean berdasarkan slot jadwal dokter tersebut saja
+    const slotQueueCount = await tx.registered.count({
       where: {
-        schedule: schedule.date
+        slot_id: data.slotId
       }
     });
     
-    const currentQueue = globalQueueCount + 1;
+    const currentQueue = slotQueueCount + 1;
     const bookingCode = `${initials}-${currentQueue}`;
 
     // 3. Buat entitas Registered

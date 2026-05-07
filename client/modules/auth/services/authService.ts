@@ -1,56 +1,18 @@
-import { AuthResponse, ApiResponse } from "../types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { AuthResponse } from "../types";
+import { apiClient } from "@/utils/api-client";
+import { API_ENDPOINTS } from "@/utils/api-endpoints";
 
 /**
  * Melakukan pemanggilan API untuk login pengguna.
- * 
- * @param email - Email pengguna yang dimasukkan
- * @param password - Kata sandi pengguna yang dimasukkan
- * @returns Promise yang berisi data autentikasi (user dan token)
- * @throws Error jika respon API tidak berhasil atau terjadi masalah jaringan
+ * Menggunakan apiClient yang otomatis mengurus header dan base URL.
  */
 export const loginUser = async (email: string, password: string): Promise<AuthResponse> => {
-  const response = await fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email, password }),
-  });
-
-  const data: ApiResponse<AuthResponse> = await response.json();
-
-  if (!response.ok || !data.success) {
-    throw new Error(data.message || "Gagal melakukan login");
-  }
-
-  return data.data as AuthResponse;
+  return apiClient.post<AuthResponse>(API_ENDPOINTS.AUTH.LOGIN, { email, password });
 };
 
 /**
  * Melakukan pemanggilan API untuk pendaftaran pengguna baru.
- * 
- * @param {string} name - Nama lengkap pengguna.
- * @param {string} email - Alamat email aktif untuk akun baru.
- * @param {string} password - Kata sandi yang memenuhi kriteria keamanan.
- * @returns {Promise<AuthResponse>} Promise yang berisi objek data user baru dan token JWT.
- * @throws {Error} Jika email sudah terdaftar atau terjadi kesalahan pada validasi server.
  */
 export const registerUser = async (name: string, email: string, password: string): Promise<AuthResponse> => {
-  const response = await fetch(`${API_URL}/auth/register`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ name, email, password }),
-  });
-
-  const data: ApiResponse<AuthResponse> = await response.json();
-
-  if (!response.ok || !data.success) {
-    throw new Error(data.message || "Gagal melakukan pendaftaran");
-  }
-
-  return data.data as AuthResponse;
+  return apiClient.post<AuthResponse>(API_ENDPOINTS.AUTH.REGISTER, { name, email, password });
 };

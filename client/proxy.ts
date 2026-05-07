@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { ROUTES } from './utils/routes';
 
 /**
  * Middleware untuk mengelola akses rute berdasarkan status autentikasi.
@@ -12,26 +13,26 @@ export default function proxy(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const { pathname } = request.nextUrl;
 
-  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
-  const isLandingPage = pathname === '/';
+  const isAuthPage = pathname.startsWith(ROUTES.LOGIN) || pathname.startsWith(ROUTES.REGISTER);
+  const isLandingPage = pathname === ROUTES.LANDING;
   
   // Rute yang membutuhkan login
   const isProtectedPage = 
-    pathname.startsWith('/home') || 
-    pathname.startsWith('/appointments') ||
-    pathname.includes('/booking'); // Melindungi rute booking di dalam /doctors/[id]/booking
+    pathname.startsWith(ROUTES.HOME) || 
+    pathname.startsWith(ROUTES.APPOINTMENTS) ||
+    pathname.includes('/booking'); // Melindungi rute booking secara dinamis
 
-  // 1. Jika mencoba mengakses halaman login/register ATAU landing page saat SUDAH login
+  // Jika mencoba mengakses halaman login/register ATAU landing page saat SUDAH login
   if ((isAuthPage || isLandingPage) && token) {
-    return NextResponse.redirect(new URL('/home', request.url));
+    return NextResponse.redirect(new URL(ROUTES.HOME, request.url));
   }
 
-  // 2. Jika mencoba mengakses halaman terproteksi saat BELUM login
+  // Jika mencoba mengakses halaman terproteksi saat BELUM login
   if (isProtectedPage && !token) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL(ROUTES.LOGIN, request.url));
   }
 
-  // 3. Biarkan rute lainnya (Landing page jika belum login, Daftar Dokter, Detail Dokter) terbuka
+  // Biarkan rute lainnya (Landing page jika belum login, Daftar Dokter, Detail Dokter) terbuka
   return NextResponse.next();
 }
 

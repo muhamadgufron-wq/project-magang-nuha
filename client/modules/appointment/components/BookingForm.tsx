@@ -7,10 +7,12 @@ import * as z from "zod";
 import { useDoctor } from "../../doctor/hooks/useDoctors";
 import { useCreateRegistration } from "../hooks/useAppointments";
 import { useRouter } from "next/navigation";
-import { format, parseISO, isSameDay, isValid, parse } from "date-fns";
+import { format, parseISO, isSameDay, isValid, parse, addMonths, subMonths, isSameMonth } from "date-fns";
 import { id as localeID } from "date-fns/locale";
-import { Calendar, ChevronLeft, ChevronRight, User, ShieldPlus} from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, User, ShieldPlus, Activity } from "lucide-react";
 import Swal from "sweetalert2";
+import { MONTHS, GENDER_OPTIONS, INSURANCE_OPTIONS } from "@/utils/constants";
+import { generateCalendarGrid, isPrevMonthDisabled, isDateInPast } from "@/utils/calendarHelper";
 
 // Validasi Form
 const bookingSchema = z.object({
@@ -25,11 +27,16 @@ const bookingSchema = z.object({
 
 type BookingFormData = z.infer<typeof bookingSchema>;
 
+/**
+ * Komponen Form Booking Dokter
+ * Di sini pasien bisa isi data diri, pilih tanggal, dan jam konsultasi.
+ */
 export default function BookingForm({ doctorId }: { doctorId: string }) {
   const router = useRouter();
   const { data: doctor, isLoading } = useDoctor(doctorId);
   const createRegistration = useCreateRegistration();
 
+  // Setup form pakai React Hook Form + Zod buat validasi
   const { control, handleSubmit, watch, formState: { errors } } = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
@@ -46,24 +53,37 @@ export default function BookingForm({ doctorId }: { doctorId: string }) {
   const patientName = watch("patientName");
   const insuranceType = watch("insuranceType");
 
+  // State buat simpan pilihan user & navigasi kalender
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
+  const [viewDate, setViewDate] = useState(new Date());
 
-  // Group schedules by date
-  const availableDates = useMemo(() => {
-    if (!doctor?.schedules) return [];
-    const dates = doctor.schedules.map((s) => parseISO(s.date));
-    return dates.filter(
-      (date, i, self) =>
-        self.findIndex((d) => isSameDay(d, date)) === i
-    ).sort((a, b) => a.getTime() - b.getTime());
-  }, [doctor?.schedules]);
+  // Bikin grid tanggal kalender berdasarkan bulan yang lagi dilihat
+  const calendarDays = useMemo(() => generateCalendarGrid(viewDate), [viewDate]);
 
+  // Cek apakah di tanggal tertentu si dokter ada jadwal aktif
+  const hasAvailableSchedule = (date: Date) => {
+    if (!doctor?.schedules) return false;
+    return doctor.schedules.some((s) => isSameDay(parseISO(s.date), date) && s.status === "ACTIVE");
+  };
+
+  // Filter jam praktek yang tersedia buat tanggal yang dipilih user
   const availableSlotsForSelectedDate = useMemo(() => {
     if (!doctor?.schedules || !selectedDate) return [];
-    return doctor.schedules.filter((s) => isSameDay(parseISO(s.date), selectedDate));
+    return doctor.schedules.filter((s) => isSameDay(parseISO(s.date), selectedDate) && s.status === "ACTIVE");
   }, [doctor?.schedules, selectedDate]);
 
+  // Fungsi buat geser bulan di kalender
+  const nextMonth = () => setViewDate(addMonths(viewDate, 1));
+  const prevMonth = () => {
+    if (isPrevMonthDisabled(viewDate)) return;
+    setViewDate(subMonths(viewDate, 1));
+  };
+
+  // Status tombol 'Kemarin' di kalender (biar gak bisa liat masa lalu)
+  const isPrevBtnDisabled = useMemo(() => isPrevMonthDisabled(viewDate), [viewDate]);
+
+  // Fungsi pas form disubmit
   const onSubmit = (data: BookingFormData) => {
     if (!selectedSlotId) {
       Swal.fire({
@@ -135,7 +155,7 @@ export default function BookingForm({ doctorId }: { doctorId: string }) {
                     name="patientName"
                     control={control}
                     render={({ field }) => (
-                      <input {...field} type="text" placeholder="Masukan nama anda" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
+                      <input {...field} type="text" placeholder="Masukan nama anda" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
                     )}
                   />
                   {errors.patientName && <p className="text-red-500 text-xs mt-1">{errors.patientName.message}</p>}
@@ -147,10 +167,11 @@ export default function BookingForm({ doctorId }: { doctorId: string }) {
                     name="gender"
                     control={control}
                     render={({ field }) => (
-                      <select {...field} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white">
+                      <select {...field} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white">
                         <option hidden aria-readonly="true">Pilih Jenis Kelamin</option>
-                        <option value="LAKI_LAKI">Laki-laki</option>
-                        <option value="PEREMPUAN">Perempuan</option>
+                        {GENDER_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
                       </select>
                     )}
                   />
@@ -163,7 +184,7 @@ export default function BookingForm({ doctorId }: { doctorId: string }) {
                     name="phone"
                     control={control}
                     render={({ field }) => (
-                      <input {...field} type="tel" placeholder="085773868152" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
+                      <input {...field} type="tel" placeholder="085773868152" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
                     )}
                   />
                   {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
@@ -175,7 +196,7 @@ export default function BookingForm({ doctorId }: { doctorId: string }) {
                     name="birthDate"
                     control={control}
                     render={({ field }) => (
-                      <input {...field} type="date" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
+                      <input {...field} type="date" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
                     )}
                   />
                   {errors.birthDate && <p className="text-red-500 text-xs mt-1">{errors.birthDate.message}</p>}
@@ -187,7 +208,7 @@ export default function BookingForm({ doctorId }: { doctorId: string }) {
                     name="nik"
                     control={control}
                     render={({ field }) => (
-                      <input {...field} type="text" maxLength={16} placeholder="Masukan 16 digit NIK" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
+                      <input {...field} type="text" maxLength={16} placeholder="Masukan 16 digit NIK" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
                     )}
                   />
                   {errors.nik && <p className="text-red-500 text-xs mt-1">{errors.nik.message}</p>}
@@ -199,10 +220,11 @@ export default function BookingForm({ doctorId }: { doctorId: string }) {
                     name="insuranceType"
                     control={control}
                     render={({ field }) => (
-                      <select {...field} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white">
+                      <select {...field} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white">
                         <option  hidden aria-readonly="true">Pilih Jenis Asuransi</option>
-                        <option value="UMUM">Umum / Pribadi</option>
-                        <option value="BPJS">BPJS Kesehatan</option>
+                        {INSURANCE_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
                       </select>
                     )}
                   />
@@ -215,7 +237,7 @@ export default function BookingForm({ doctorId }: { doctorId: string }) {
                     name="complaint"
                     control={control}
                     render={({ field }) => (
-                      <textarea {...field} rows={3} placeholder="Sebutkan keluhan-keluhan anda" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"></textarea>
+                      <textarea {...field} rows={3} placeholder="Sebutkan keluhan-keluhan anda" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"></textarea>
                     )}
                   />
                 </div>
@@ -233,44 +255,91 @@ export default function BookingForm({ doctorId }: { doctorId: string }) {
                 {/* Kalender */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-800">Pilih Tanggal</h3>
+                    <h3 className="font-medium text-gray-800">Pilih Tanggal</h3>
                     <div className="flex gap-2">
-                      <button type="button" className="p-1 rounded bg-gray-50 text-gray-500 hover:bg-gray-100"><ChevronLeft size={20} /></button>
-                      <button type="button" className="p-1 rounded bg-gray-50 text-gray-500 hover:bg-gray-100"><ChevronRight size={20} /></button>
+                      <button 
+                        type="button" 
+                        onClick={prevMonth}
+                        disabled={isPrevBtnDisabled}
+                        className={`p-1 rounded transition-colors ${
+                          isPrevBtnDisabled 
+                            ? 'bg-gray-50 text-gray-200 cursor-not-allowed' 
+                            : 'bg-gray-50 text-gray-500 hover:bg-emerald-100 hover:text-emerald-600'
+                        }`}
+                      >
+                        <ChevronLeft size={20} />
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={nextMonth}
+                        className="p-1 rounded bg-gray-50 text-gray-500 hover:bg-emerald-100 hover:text-emerald-600 transition-colors"
+                      >
+                        <ChevronRight size={20} />
+                      </button>
                     </div>
                   </div>
                   
                   <div className="bg-white border border-gray-100 rounded-xl p-4">
-                    <div className="text-center font-medium text-sm text-gray-600 mb-4">
-                      {availableDates.length > 0 ? format(availableDates[0], 'MMMM yyyy', { locale: localeID }) : 'Bulan'}
+                    <div className="text-center font-bold text-emerald-800 mb-6 flex items-center justify-center gap-2">
+                      {MONTHS[viewDate.getMonth()]} {viewDate.getFullYear()}
                     </div>
-                    {availableDates.length > 0 ? (
-                      <div className="grid grid-cols-5 gap-2">
-                        {availableDates.slice(0, 15).map((date) => {
-                          const isSelected = selectedDate && isSameDay(date, selectedDate);
-                          return (
-                            <button
-                              key={date.toISOString()}
-                              type="button"
-                              onClick={() => {
-                                setSelectedDate(date);
-                                setSelectedSlotId(null);
-                              }}
-                              className={`py-2 rounded-lg text-sm font-medium transition-all ${
-                                isSelected 
-                                  ? 'bg-emerald-600 text-white shadow-md' 
-                                  : 'hover:bg-emerald-50 text-gray-700'
-                              }`}
-                            >
-                              <div className="text-xs opacity-70 mb-1">{format(date, 'EEE', { locale: localeID })}</div>
-                              {format(date, 'd')}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500 text-center py-4">Tidak ada jadwal tersedia.</p>
-                    )}
+                    
+                    <div className="grid grid-cols-7 gap-2">
+                      {/* Hari header */}
+                      {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map(day => (
+                        <div key={day} className="text-center text-[10px] font-medium text-gray-400 mb-2">{day}</div>
+                      ))}
+                      
+                      {/* Date tiles */}
+                      {calendarDays.map((date) => {
+                        const isSelected = selectedDate && isSameDay(date, selectedDate);
+                        const isAvailable = hasAvailableSchedule(date);
+                        const isCurrentMonth = isSameMonth(date, viewDate);
+                        const isPast = isDateInPast(date);
+                        
+                        return (
+                          <button
+                            key={date.toISOString()}
+                            type="button"
+                            disabled={!isCurrentMonth || isPast}
+                            onClick={() => {
+                              setSelectedDate(date);
+                              setSelectedSlotId(null);
+                            }}
+                            className={`relative flex flex-col items-center justify-center py-2.5 rounded-lg transition-all border ${
+                              isSelected 
+                                ? 'bg-emerald-600 border-emerald-600 text-white z-10' 
+                                : !isCurrentMonth
+                                  ? 'bg-gray-50/50 border-transparent text-gray-200 cursor-default opacity-0'
+                                  : isPast
+                                    ? 'bg-gray-50 border-transparent text-gray-300 cursor-not-allowed'
+                                    : 'bg-white border-transparent hover:border-emerald-200 hover:bg-emerald-50 text-gray-700'
+                            }`}
+                          >
+                            <span className="text-xs font-bold">{format(date, 'd')}</span>
+                            
+                            {/* Titik ketersediaan */}
+                            {isCurrentMonth && !isPast && (
+                              <div className={`w-1.5 h-1.5 rounded-full mt-1.5 ${
+                                isAvailable ? (isSelected ? 'bg-white' : 'bg-emerald-500') : 'bg-gray-300'
+                              }`} />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Legend */}
+                    <div className="mt-6 flex items-center justify-center gap-6 border-t border-gray-50 pt-4">
+                       <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                          <span className="text-[10px] font-medium text-gray-500">Tersedia</span>
+                       </div>
+                       <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-gray-300" />
+                          <span className="text-[10px] font-medium text-gray-500">Tidak Ada</span>
+                       </div>
+                    </div>
                   </div>
                 </div>
 
@@ -294,7 +363,6 @@ export default function BookingForm({ doctorId }: { doctorId: string }) {
                           };
                           const startTimeObj = parseTime(slot.start_time);
                           const formattedStartTime = startTimeObj && isValid(startTimeObj) ? format(startTimeObj, 'HH.mm') : "-";
-                          // Simple check for full
                           const isFull = slot.booked_general >= slot.general_quota && slot.booked_vip >= slot.vip_quota;
 
                           return (
@@ -303,12 +371,12 @@ export default function BookingForm({ doctorId }: { doctorId: string }) {
                               type="button"
                               disabled={isFull}
                               onClick={() => setSelectedSlotId(slot.id)}
-                              className={`py-3 px-4 rounded-xl text-sm font-medium transition-all text-center border
+                              className={`py-3 px-4 rounded-lg text-sm font-medium transition-all text-center border
                                 ${isSelected 
-                                  ? 'bg-emerald-600 border-emerald-600 text-white shadow-md' 
+                                  ? 'bg-emerald-600 border-emerald-600 text-white z-10' 
                                   : isFull
                                     ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed line-through'
-                                    : 'bg-white border-emerald-100 text-emerald-700 hover:bg-emerald-50'
+                                    : 'bg-white border-emerald-100 text-emerald-700 hover:bg-emerald-100'
                                 }
                               `}
                             >
@@ -318,12 +386,15 @@ export default function BookingForm({ doctorId }: { doctorId: string }) {
                         })}
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-500 py-4 bg-gray-50 rounded-xl text-center">Tidak ada jam praktek pada tanggal ini.</p>
+                      <div className="flex flex-col items-center justify-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200 text-center px-4">
+                        <p className="text-sm font-medium text-gray-400">Tidak ada jadwal praktek tersedia pada tanggal ini.</p>
+                      </div>
                     )
                   ) : (
-                    <p className="text-sm text-gray-500 py-8 bg-gray-50 rounded-xl text-center border border-dashed border-gray-200">
-                      Silakan pilih tanggal terlebih dahulu
-                    </p>
+                    <div className="flex flex-col items-center justify-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200 text-center px-4">
+                      <Calendar className="w-10 h-10 text-gray-300 mb-3" />
+                      <p className="text-sm font-medium text-gray-400">Silakan pilih tanggal terlebih dahulu dari kalender.</p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -338,38 +409,38 @@ export default function BookingForm({ doctorId }: { doctorId: string }) {
             <h2 className="text-xl font-bold text-gray-800 mb-6">Detail Booking</h2>
             
             {/* Dokter Info */}
-            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl mb-6">
+            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl mb-6 border border-gray-100">
               <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                 <div className="w-full h-full bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-xl font-black">
-                  {doctor.user.name.charAt(0)}
+                  {doctor.user.name.charAt(4)}
                 </div>
               </div>
               <div>
                 <h3 className="font-bold text-gray-900">{doctor.user.name}</h3>
-                <p className="text-xs text-emerald-600 font-medium">Spesialis {doctor.specialization || "Umum"}</p>
+                <p className="text-xs text-emerald-600 font-bold">Spesialis {doctor.specialization || "Umum"}</p>
               </div>
             </div>
 
             {/* Detail Info */}
             <div className="space-y-5 mb-8">
               <div className="flex gap-4">
-                <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 text-emerald-600">
-                  <User size={16} />
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0 text-emerald-600">
+                  <User size={20} />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 font-medium mb-1">Pasien</p>
-                  <p className="text-gray-900 font-semibold ">{patientName || <span className="text-gray-400">Nama Pasien</span>}</p>
+                  <p className="text-[12px] text-gray-400 font-medium mb-1">Pasien</p>
+                  <p className="text-gray-900 font-medium text-sm">{patientName || <span className="text-gray-300 italic">Belum diisi</span>}</p>
                 </div>
               </div>
 
               <div className="flex gap-4">
-                <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 text-emerald-600">
-                  <Calendar size={16} />
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0 text-emerald-600">
+                  <Calendar size={20} />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 font-medium mb-1">Tanggal & Waktu</p>
-                  <p className="text-gray-900 font-semibold">
-                    {selectedDate ? format(selectedDate, 'EEEE, d MMMM yyyy', { locale: localeID }) : <span className="text-gray-400">Pilih tanggal</span>}
+                  <p className="text-[12px] text-gray-400 font-medium mb-1">Jadwal Konsultasi</p>
+                  <p className="text-gray-900 font-medium text-sm">
+                    {selectedDate ? format(selectedDate, 'EEEE, d MMMM yyyy', { locale: localeID }) : <span className="text-gray-300 italic">Pilih tanggal</span>}
                   </p>
                   {selectedSlotId && (() => {
                     const selectedSlot = doctor.schedules.find(s => s.id === selectedSlotId);
@@ -380,8 +451,8 @@ export default function BookingForm({ doctorId }: { doctorId: string }) {
                       else timeObj = parse(timeStr, "HH:mm:ss", new Date());
                     }
                     return (
-                      <p className="text-sm text-gray-600 mt-1">
-                        {timeObj && isValid(timeObj) ? format(timeObj, 'HH:mm') : "-"} WIB
+                      <p className="text-sm font-medium mt-1">
+                        Pukul {timeObj && isValid(timeObj) ? format(timeObj, 'HH:mm') : "-"} WIB
                       </p>
                     );
                   })()}
@@ -389,11 +460,12 @@ export default function BookingForm({ doctorId }: { doctorId: string }) {
               </div>
 
               <div className="flex gap-4">
-                <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 text-emerald-600">
-                  <ShieldPlus size={16} />
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0 text-emerald-600">
+                  <ShieldPlus size={20} />
                 </div>
-                <div><p className="text-xs text-gray-500 font-medium mb-1">Asuransi</p>
-                  <p className="text-xs text-gray-500">{insuranceType || '-'}</p>
+                <div>
+                  <p className="text-[12px] text-gray-400 font-medium mb-1">Jenis Layanan</p>
+                  <p className="text-gray-900 font-medium text-sm">{insuranceType || <span className="text-gray-300 italic">Pilih asuransi</span>}</p>
                 </div>
               </div>
             </div>
@@ -403,10 +475,9 @@ export default function BookingForm({ doctorId }: { doctorId: string }) {
               type="submit"
               form="booking-form"
               disabled={createRegistration.isPending}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 group"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-200 text-white font-medium py-4 rounded-2xl transition-all flex items-center justify-center gap-2 group"
             >
-              {createRegistration.isPending ? "Memproses..." : "Booking"}
-              {!createRegistration.isPending && <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />}
+              {createRegistration.isPending ? "Memproses Data..." : "Konfirmasi Booking"}
             </button>
           </div>
         </div>
