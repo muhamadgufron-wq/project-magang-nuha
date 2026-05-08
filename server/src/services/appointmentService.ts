@@ -67,7 +67,7 @@ export const createRegistration = async (data: {
         slot_id: data.slotId,
         booking_code: bookingCode,
         patient_type: data.patientType,
-        schedule: schedule.date, // Sesuai ERD, bisa disesuaikan jika ingin jam spesifik
+        schedule: schedule.date,
         status: 'BOOKED',
       },
       include: {

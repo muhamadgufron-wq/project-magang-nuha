@@ -129,7 +129,7 @@ model Registered {
   schedule           DateTime      
   reschedule_from_id Int?
   status             String        @default("BOOKED") @db.VarChar(20) // BOOKED, REGISTERED
-  booking_code       String        @unique @db.VarChar(20)
+  booking_code       String        @db.VarChar(20)
   patient_type       String        @default("GENERAL") @db.VarChar(20) // VIP, GENERAL
   created_at         DateTime      @default(now())
   updated_at         DateTime      @updatedAt

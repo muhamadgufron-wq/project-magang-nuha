@@ -3,6 +3,9 @@ import app from "./app";
 import { generateSchedulesFromMaster } from "./services/doctorService";
 import { config } from "./config/env";
 
+// Paksa timezone server ke WIB
+process.env.TZ = "Asia/Jakarta";
+
 const PORT = config.port;
 
 app.listen(PORT, async () => {

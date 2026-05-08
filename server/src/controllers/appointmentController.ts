@@ -8,23 +8,32 @@ import { sendSuccess, sendError } from "../utils/response";
 export const createRegistration = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
-    if (!userId) return sendError(res, "User tidak terautentikasi", 401);
+    if (!userId) {
+      console.warn("[Booking] Attempted booking without authentication.");
+      return sendError(res, "User tidak terautentikasi", 401);
+    }
+
+    // Logging data yang masuk untuk debug
+    console.log(`[Booking] Request dari User ID: ${userId}, Body:`, req.body);
 
     const validatedData = createRegistrationSchema.parse(req.body);
-    
+
     const registration = await appointmentService.createRegistration({
-      userId,
-      slotId: validatedData.slotId,
+      userId: Number(userId),
+      slotId: Number(validatedData.slotId),
       patientType: validatedData.patientType as 'VIP' | 'GENERAL',
       schedule: validatedData.schedule,
     });
 
+    console.log(`[Booking] Sukses! Booking Code: ${registration.booking_code}`);
     return sendSuccess(res, "Pendaftaran berhasil", registration, 201);
   } catch (error: any) {
     if (error instanceof ZodError) {
       return sendError(res, error.issues[0].message, 400);
     }
-    
+
+    console.error("[Booking Error] Detail:", error.message);
+
     const knownErrors = [
       "Profil pasien tidak ditemukan",
       "Jadwal tidak ditemukan atau sudah tidak aktif",
@@ -36,8 +45,7 @@ export const createRegistration = async (req: AuthRequest, res: Response) => {
       return sendError(res, error.message, 400);
     }
 
-    console.error("Create Registration Error:", error);
-    return sendError(res, "Terjadi kesalahan pada server", 500);
+    return sendError(res, "Terjadi kesalahan pada server saat memproses booking", 500);
   }
 };
 

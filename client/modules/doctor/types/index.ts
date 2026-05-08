@@ -23,6 +23,18 @@ export interface DoctorSchedule {
   notes?: string;
 }
 
+export interface DoctorMasterSchedule {
+  id: number;
+  uuid: string;
+  doctor_id: number;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  vip_quota: number;
+  general_quota: number;
+  status: string;
+}
+
 export interface Doctor {
   id: number;
   uuid: string;
@@ -32,6 +44,7 @@ export interface Doctor {
   description?: string;
   user: User;
   schedules: DoctorSchedule[];
+  master_schedules?: DoctorMasterSchedule[];
   created_at: string;
   updated_at: string;
 }

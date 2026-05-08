@@ -9,12 +9,12 @@ export const API_ENDPOINTS = {
     REGISTER: '/auth/register',
   },
   DOCTOR: {
-    LIST: '/doctor',
-    DETAIL: (uuid: string) => `/doctor/${uuid}`,
-    SPECIALIZATIONS: '/doctor/specializations',
+    LIST: '/doctors',
+    DETAIL: (uuid: string) => `/doctors/${uuid}`,
+    SPECIALIZATIONS: '/doctors/specializations',
   },
   APPOINTMENT: {
-    CREATE: '/appointment',
-    MY_APPOINTMENTS: '/appointment/my-appointments',
+    CREATE: '/appointments',
+    MY_APPOINTMENTS: '/appointments/me',
   }
 };

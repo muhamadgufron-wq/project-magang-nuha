@@ -11,9 +11,8 @@ dotenv.config({ path: path.join(__dirname, "../../.env") });
 export const config = {
   port: process.env.PORT || 5000,
   nodeEnv: process.env.NODE_ENV || "development",
-  // Kamu bisa nambahin config lain di sini nanti, misal:
-  // jwtSecret: process.env.JWT_SECRET,
-  // databaseUrl: process.env.DATABASE_URL,
+  databaseUrl: process.env.DATABASE_URL || "",
+  jwtSecret: process.env.JWT_SECRET || "default_secret_key",
 };
 
 // Validasi sederhana biar gak ada config penting yang ketinggalan

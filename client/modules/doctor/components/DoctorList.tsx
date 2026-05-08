@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useDoctors, useSpecializations } from "../hooks/useDoctors";
+import { Doctor } from "../types";
 import { User, Calendar, ChevronDown } from "lucide-react";
 
 // Helper untuk tanggal dalam format Indonesia
@@ -194,8 +195,8 @@ const DoctorListContent = () => {
               <tbody className="divide-y divide-gray-100 border-b border-gray-100">
                 {(() => {
                   // Group doctors by specialization (case-insensitive)
-                  const groupedDoctors: { [key: string]: any[] } = {};
-                  doctors.forEach(doctor => {
+                  const groupedDoctors: Record<string, Doctor[]> = {};
+                  doctors.forEach((doctor: Doctor) => {
                     const spec = (doctor.specialization || "UMUM").toUpperCase();
                     if (!groupedDoctors[spec]) groupedDoctors[spec] = [];
                     groupedDoctors[spec].push(doctor);
@@ -203,7 +204,6 @@ const DoctorListContent = () => {
 
                   return Object.entries(groupedDoctors).map(([spec, groupDoctors]) => {
                     return groupDoctors.map((doctor, index) => {
-                      const activeSchedule = doctor.schedules?.[0];
                       return (
                         <tr 
                           key={doctor.id} 
@@ -228,19 +228,26 @@ const DoctorListContent = () => {
                           </td>
                           <td className="px-6 py-6 align-top border-r border-gray-50">
                             <div className="text-sm text-gray-600">
-                              {activeSchedule ? (
-                                <>
-                                  {formatTime(activeSchedule.start_time)} -<br/>
-                                  {formatTime(activeSchedule.end_time)}
-                                </>
-                              ) : (
-                                "-"
-                              )}
+                              {(() => {
+                                // Ambil hanya jam unik untuk ditampilkan
+                                const schedules = doctor.schedules || [];
+                                const uniqueTimes = Array.from(new Set(
+                                  schedules.map(s => `${formatTime(s.start_time)} - ${formatTime(s.end_time)}`)
+                                ));
+                                
+                                return uniqueTimes.length > 0 ? (
+                                  <div className="space-y-1">
+                                    {uniqueTimes.map((timeRange, i) => (
+                                      <div key={i}>{timeRange}</div>
+                                    ))}
+                                  </div>
+                                ) : "-";
+                              })()}
                             </div>
                           </td>
                           <td className="px-6 py-6 align-top border-r border-gray-50">
-                            <div className={`text-sm font-medium ${activeSchedule ? 'text-emerald-600' : 'text-red-500'}`}>
-                              {activeSchedule ? "Praktik" : "Tidak Praktik"}
+                            <div className={`text-sm font-medium ${doctor.schedules && doctor.schedules.length > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                              {doctor.schedules && doctor.schedules.length > 0 ? "Praktik" : "Tidak Praktik"}
                             </div>
                           </td>
                           <td className="px-6 py-6 align-top">
@@ -251,7 +258,7 @@ const DoctorListContent = () => {
                               >
                                 Lihat Jadwal
                               </Link>
-                              {activeSchedule && (
+                              {doctor.schedules && doctor.schedules.length > 0 && (
                                 <Link 
                                   href={`/doctors/${doctor.uuid}/booking?day=${getDayName(appliedDate)}`}
                                   className="px-4 py-2 bg-[#005B41] text-white rounded-lg text-xs font-bold text-center hover:bg-emerald-900 transition-all shadow-sm whitespace-nowrap"

@@ -87,50 +87,71 @@ export const DoctorDetail: React.FC = () => {
                   "Sunday": "Minggu"
                 };
 
-                // Ambil jadwal unik berdasarkan hari
-                const weeklySchedule: { [key: string]: any } = {};
-                
-                doctor.schedules?.forEach((s: any) => {
-                  const dayName = format(parseISO(s.date), "EEEE");
-                  if (!weeklySchedule[dayName]) {
-                    weeklySchedule[dayName] = s;
+                // Helper Universal untuk normalisasi waktu (Mengonversi UTC ke WIB dengan Benar)
+                const normalizeTimeDisplay = (timeStr: string) => {
+                  if (!timeStr) return "-";
+                  try {
+                    // Jika format ISO dari database (2024-...T08:00:00Z)
+                    if (timeStr.includes('T')) {
+                      const date = parseISO(timeStr);
+                      // Gunakan Intl.DateTimeFormat untuk paksa ke WIB (Asia/Jakarta)
+                      return date.toLocaleTimeString('id-ID', {
+                        timeZone: 'Asia/Jakarta',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                      }).replace(':', '.');
+                    }
+                    // Jika format String Jam saja (08:00:00)
+                    return timeStr.substring(0, 5).replace(':', '.');
+                  } catch {
+                    return "-";
+                  }
+                };
+
+                // Ambil jadwal rutin berdasarkan Master Schedule (0-6)
+                const weeklySchedule: { [key: number]: any } = {};
+                doctor.master_schedules?.forEach((ms: any) => {
+                  if (!weeklySchedule[ms.day_of_week]) {
+                    weeklySchedule[ms.day_of_week] = ms;
                   }
                 });
 
-                return daysOrder.map((day, index) => {
-                  const schedule = weeklySchedule[day];
+                // Mapping Hari yang SANGAT KETAT (0=Sun, 1=Mon, ..., 6=Sat)
+                const uiDaysOrder = [
+                  { name: "Monday", label: "Senin", dbIdx: 1 },
+                  { name: "Tuesday", label: "Selasa", dbIdx: 2 },
+                  { name: "Wednesday", label: "Rabu", dbIdx: 3 },
+                  { name: "Thursday", label: "Kamis", dbIdx: 4 },
+                  { name: "Friday", label: "Jumat", dbIdx: 5 },
+                  { name: "Saturday", label: "Sabtu", dbIdx: 6 },
+                  { name: "Sunday", label: "Minggu", dbIdx: 0 },
+                ];
+
+                return uiDaysOrder.map((day, index) => {
+                  const schedule = weeklySchedule[day.dbIdx];
                   const isPracticing = !!schedule;
 
-                  // Parsing Waktu
-                  const parseTime = (timeStr: string) => {
-                    if (!timeStr) return null;
-                    try {
-                      if (timeStr.includes('T')) return parseISO(timeStr);
-                      return parse(timeStr, "HH:mm:ss", new Date());
-                    } catch (e) {
-                      return null;
-                    }
-                  };
-
-                  const startTimeObj = schedule ? parseTime(schedule.start_time) : null;
-                  const endTimeObj = schedule ? parseTime(schedule.end_time) : null;
-                  const timeRange = startTimeObj && endTimeObj && isValid(startTimeObj) && isValid(endTimeObj)
-                    ? `${format(startTimeObj, 'HH:mm')} - ${format(endTimeObj, 'HH:mm')}`
+                  const timeRange = isPracticing 
+                    ? `${normalizeTimeDisplay(schedule.start_time)} - ${normalizeTimeDisplay(schedule.end_time)}`
                     : "Tidak ada jadwal";
 
                   return (
                     <div 
-                      key={day} 
+                      key={day.name} 
                       className={`flex items-center justify-between px-4 py-2.5 ${
-                        index !== daysOrder.length - 1 ? "border-b border-gray-50" : ""
+                        index !== uiDaysOrder.length - 1 ? "border-b border-gray-50" : ""
                       } ${isPracticing ? "bg-white" : "bg-gray-50/50"}`}
                     >
                       <p className={`text-sm font-medium ${isPracticing ? "text-gray-900" : "text-gray-400"}`}>
-                        {dayLabels[day]}
+                        {day.label}
                       </p>
-                      <p className={`text-sm font-semibold ${isPracticing ? "text-gray-900" : "text-gray-400 italic font-normal"}`}>
-                        {timeRange}
-                      </p>
+                      
+                      <div className="text-right">
+                        <p className={`text-sm font-semibold ${isPracticing ? "text-gray-900" : "text-gray-400 italic font-normal"}`}>
+                          {timeRange}
+                        </p>
+                      </div>
                     </div>
                   );
                 });

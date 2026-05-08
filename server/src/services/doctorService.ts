@@ -8,46 +8,43 @@ import prisma from "../config/prisma";
 export const generateSchedulesFromMaster = async (daysAhead: number = 14) => {
   console.log(`[Generator] Mulai proses cetak slot untuk ${daysAhead} hari kedepan...`);
   
-  // 1. Ambil semua Master Schedule yang aktif
   const masterSchedules = await prisma.doctorMasterSchedule.findMany({
     where: { status: 'ACTIVE' }
   });
 
-  if (masterSchedules.length === 0) {
-    console.log("[Generator] Tidak ada Master Schedule aktif ditemukan.");
-    return { created: 0, skipped: 0 };
-  }
+  if (masterSchedules.length === 0) return { created: 0, skipped: 0 };
 
   let createdCount = 0;
   let skippedCount = 0;
 
-  // 2. Loop untuk setiap hari mulai dari hari ini sampai X hari kedepan
-  const today = startOfDay(new Date());
+  // Gunakan waktu saat ini di Jakarta sebagai basis
+  const now = new Date();
+  const jakartaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Jakarta"}));
   
   for (let i = 0; i < daysAhead; i++) {
-    const targetDate = addDays(today, i);
-    const dayOfWeek = getDay(targetDate); // 0 = Minggu, 1 = Senin, dst (cocok dengan DB kita)
+    const d = new Date(jakartaTime);
+    d.setDate(d.getDate() + i);
+    
+    // PAKSA ke UTC Midnight (00:00:00.000Z)
+    const targetDate = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0));
+    const dayOfWeek = targetDate.getUTCDay(); // 0=Minggu
 
-    // Cari master schedule yang harinya cocok dengan targetDate ini
     const matchingMasters = masterSchedules.filter(m => m.day_of_week === dayOfWeek);
 
     for (const master of matchingMasters) {
-      // 3. Cek apakah slot ini sudah pernah dibuat sebelumnya?
-      // Kita cek kombinasi master_id dan date agar tidak duplikat
       const existingSchedule = await prisma.doctorSchedule.findFirst({
         where: {
-          master_schedule_id: master.id,
+          doctor_id: master.doctor_id,
           date: targetDate
         }
       });
 
       if (!existingSchedule) {
-        // 4. Jika belum ada, buat slot baru (copy data dari Master)
         await prisma.doctorSchedule.create({
           data: {
             doctor_id: master.doctor_id,
             master_schedule_id: master.id,
-            date: targetDate,
+            date: targetDate, // Simpan sebagai UTC Midnight
             start_time: master.start_time,
             end_time: master.end_time,
             vip_quota: master.vip_quota,
@@ -61,23 +58,34 @@ export const generateSchedulesFromMaster = async (daysAhead: number = 14) => {
       }
     }
   }
-
-  console.log(`[Generator] Selesai! Berhasil buat ${createdCount} slot baru, ${skippedCount} slot sudah ada.`);
   return { created: createdCount, skipped: skippedCount };
 };
 
 export const getAllDoctors = async (specialization?: string, page: number = 1, limit: number = 10, date?: string) => {
   const skip = (page - 1) * limit;
-
-  // Filter dasar untuk spesialisasi
   const where: any = specialization 
     ? { specialization: { contains: specialization, mode: 'insensitive' } } 
     : {};
 
-  // Filter untuk jadwal: Jika tanggal diberikan, HANYA tampilkan dokter yang punya jadwal di tanggal itu
-  const scheduleWhere = date 
-    ? { date: new Date(date), status: 'ACTIVE' }
-    : { date: { gte: new Date() }, status: 'ACTIVE' };
+  let scheduleWhere: any;
+  if (date) {
+    // Parsing string 'YYYY-MM-DD' langsung ke UTC Midnight
+    const [year, month, day] = date.split('-').map(Number);
+    const utcDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    
+    scheduleWhere = {
+      date: utcDate,
+      status: 'ACTIVE'
+    };
+  } else {
+    // Default: Ambil mulai dari hari ini (UTC Midnight)
+    const d = new Date();
+    const utcToday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0));
+    scheduleWhere = { 
+      date: { gte: utcToday }, 
+      status: 'ACTIVE' 
+    };
+  }
 
   // Tambahkan filter relasi: Dokter harus punya minimal satu jadwal yang sesuai kriteria di atas
   where.schedules = {
@@ -135,6 +143,10 @@ export const getDoctorByUuid = async (uuid: string) => {
           phone: true,
           is_vip: true,
         }
+      },
+      master_schedules: {
+        where: { status: 'ACTIVE' },
+        orderBy: { day_of_week: 'asc' }
       },
       schedules: {
         where: {
