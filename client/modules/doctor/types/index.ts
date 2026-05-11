@@ -39,6 +39,7 @@ export interface Doctor {
   id: number;
   uuid: string;
   user_id: number;
+  name: string;
   specialization?: string;
   practice_number?: string;
   description?: string;

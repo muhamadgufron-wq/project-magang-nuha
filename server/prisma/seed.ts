@@ -4,7 +4,15 @@ import bcrypt from 'bcrypt'
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('Start seeding...')
+  console.log('Start seeding 50 doctors...')
+
+  // Cleanup existing doctor data to avoid collisions
+  console.log('Cleaning up existing doctor data...')
+  await prisma.registered.deleteMany({})
+  await prisma.doctorSchedule.deleteMany({})
+  await prisma.doctorMasterSchedule.deleteMany({})
+  await prisma.doctor.deleteMany({})
+  await prisma.user.deleteMany({ where: { role: 'DOCTOR' } })
 
   const hashedPassword = await bcrypt.hash('password123', 10)
 
@@ -21,85 +29,93 @@ async function main() {
   })
   console.log('Admin checked/created')
 
-  // 2. Data Dokter dengan Master Schedule (Pola Mingguan)
-  const doctorData = [
-    {
-      name: 'dr. Asep Kurniawan, Sp.JP',
-      email: 'asep@healthcare.com',
-      initials: 'AK',
-      specialization: 'AHLI JANTUNG',
-      masterSchedules: [
-        { day_of_week: 1, start: 8, end: 12 }, // Senin
-        { day_of_week: 3, start: 8, end: 12 }, // Rabu
-        { day_of_week: 5, start: 13, end: 17 } // Jumat
-      ]
-    },
-    {
-      name: 'dr. Maya Wuninggar, Sp.JP',
-      email: 'maya@healthcare.com',
-      initials: 'MW',
-      specialization: 'AHLI JANTUNG',
-      masterSchedules: [
-        { day_of_week: 2, start: 9, end: 13 }, // Selasa
-        { day_of_week: 4, start: 9, end: 13 }, // Kamis
-        { day_of_week: 6, start: 8, end: 11 }  // Sabtu
-      ]
-    },
-    {
-      name: 'dr. Budi Santoso, Sp.PD',
-      email: 'budi@healthcare.com',
-      initials: 'BS',
-      specialization: 'PENYAKIT DALAM',
-      masterSchedules: [
-        { day_of_week: 1, start: 14, end: 18 }, // Senin
-        { day_of_week: 2, start: 14, end: 18 }, // Selasa
-        { day_of_week: 3, start: 14, end: 18 }  // Rabu
-      ]
-    },
-    {
-      name: 'dr. Ilham Ahmadi, Sp.PD',
-      email: 'ilham@healthcare.com',
-      initials: 'IA',
-      specialization: 'PENYAKIT DALAM',
-      masterSchedules: [
-        { day_of_week: 4, start: 8, end: 12 }, // Kamis
-        { day_of_week: 5, start: 8, end: 12 }, // Jumat
-        { day_of_week: 6, start: 13, end: 16 } // Sabtu
-      ]
-    },
-    {
-      name: 'Siska Hamelia Putri, M.Psi',
-      email: 'siska@healthcare.com',
-      initials: 'SH',
-      specialization: 'PSIKOLOGI KLINIS',
-      masterSchedules: [
-        { day_of_week: 1, start: 8, end: 15 }, // Senin
-        { day_of_week: 3, start: 8, end: 15 }, // Rabu
-        { day_of_week: 5, start: 8, end: 15 }  // Jumat
-      ]
-    }
+  // Data Generator untuk 50 Dokter
+  const specializations = [
+    'AHLI JANTUNG', 'PENYAKIT DALAM', 'PSIKOLOGI KLINIS', 'PEDIATRI (ANAK)', 
+    'KULIT DAN KELAMIN', 'MATA', 'THT', 'SARAF', 'BEDAH UMUM', 'KANDUNGAN'
+  ]
+  
+  const firstNames = [
+    'Budi', 'Siti', 'Agus', 'Lani', 'Dedi', 'Rina', 'Iwan', 'Maya', 'Eko', 'Sari',
+    'Andi', 'Dewi', 'Hendra', 'Yanti', 'Aris', 'Mira', 'Toni', 'Nina', 'Rudi', 'Ina',
+    'Fajar', 'Putri', 'Gani', 'Rosa', 'Hadi', 'Lia', 'Jaka', 'Siska', 'Kiki', 'Roni',
+    'Lutfi', 'Meta', 'Nico', 'Olla', 'Panji', 'Qori', 'Rama', 'Sela', 'Tio', 'Uli',
+    'Vino', 'Wanda', 'Xena', 'Yuda', 'Zizi', 'Abdi', 'Bela', 'Candra', 'Dina', 'Erik'
   ]
 
-  for (const doc of doctorData) {
+  const lastNames = [
+    'Santoso', 'Aminah', 'Kurniawan', 'Wulandari', 'Hidayat', 'Putri', 'Setiawan', 'Wuninggar', 'Prasetyo', 'Indah',
+    'Saputra', 'Lestari', 'Wijaya', 'Sari', 'Nugroho', 'Utami', 'Purnama', 'Rahayu', 'Gunawan', 'Kartika',
+    'Hidayat', 'Permata', 'Suryono', 'Zulfa', 'Baskoro', 'Ayu', 'Mahendra', 'Hamelia', 'Puspita', 'Jaya',
+    'Hakim', 'Farida', 'Siregar', 'Mandasari', 'Wibowo', 'Aini', 'Pratama', 'Fitri', 'Kusuma', 'Aulia',
+    'Sudirman', 'Mulyani', 'Simanjuntak', 'Febriani', 'Tanjung', 'Saraswati', 'Gultom', 'Handayani', 'Lubis', 'Rahman'
+  ]
+
+  const usedInitials = new Set<string>()
+
+  for (let i = 0; i < 50; i++) {
+    const firstName = firstNames[i]
+    const lastName = lastNames[i]
+    const fullName = `dr. ${firstName} ${lastName}, Sp.${i % 10 === 0 ? 'JP' : i % 5 === 0 ? 'PD' : 'OG'}`
+    const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i}@healthcare.com`
+    
+    // Generate Unique 2-letter initials
+    let initials = (firstName[0] + lastName[0]).toUpperCase()
+    if (usedInitials.has(initials)) {
+      // Jika tabrakan, coba kombinasi lain: huruf pertama depan + huruf kedua belakang
+      initials = (firstName[0] + (lastName[1] || lastName[0])).toUpperCase()
+    }
+    if (usedInitials.has(initials)) {
+      // Jika masih tabrakan, coba: huruf kedua depan + huruf pertama belakang
+      initials = ((firstName[1] || firstName[0]) + lastName[0]).toUpperCase()
+    }
+    // Jika masih tabrakan (sangat jarang untuk 50 data), gunakan huruf random A-Z
+    while (usedInitials.has(initials)) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+      initials = chars[Math.floor(Math.random() * 26)] + chars[Math.floor(Math.random() * 26)]
+    }
+    usedInitials.add(initials)
+
+    const spec = specializations[i % specializations.length]
+
+    // Buat Master Schedule Variatif
+    const masterSchedules = []
+    const workingDays = [1, 2, 3, 4, 5, 6] // Sen - Sab
+    const selectedDays = workingDays.sort(() => 0.5 - Math.random()).slice(0, 3) // Pilih 3 hari acak
+
+    for (const day of selectedDays) {
+      const startHour = 8 + Math.floor(Math.random() * 6) // Mulai antara jam 8 - 14
+      masterSchedules.push({
+        day_of_week: day,
+        start: startHour,
+        end: startHour + 4 // Durasi 4 jam
+      })
+    }
+
     const user = await prisma.user.upsert({
-      where: { email: doc.email },
+      where: { email: email },
       update: {
-        name: doc.name,
+        name: fullName,
         doctor: {
           update: {
-            specialization: doc.specialization
+            name: fullName,
+            initials: initials,
+            specialization: spec
           }
         }
       },
       create: {
-        name: doc.name,
-        email: doc.email,
+        name: fullName,
+        email: email,
         password: hashedPassword,
         role: 'DOCTOR',
         doctor: {
           create: {
-            initials: doc.initials,
-            specialization: doc.specialization,
+            name: fullName,
+            initials: initials,
+            specialization: spec,
+            practice_number: `STR-${1000 + i}`,
+            description: `Dokter spesialis ${spec.toLowerCase()} berpengalaman dalam melayani pasien dengan ramah dan profesional.`
           }
         }
       },
@@ -107,18 +123,16 @@ async function main() {
     })
 
     if (user.doctor) {
-      console.log(`Processing Doctor: ${doc.name}`)
+      console.log(`Processing Doctor ${i + 1}/50: ${fullName}`)
       
-      // 3. Create Master Schedules
-      for (const ms of doc.masterSchedules) {
+      // Create Master Schedules
+      for (const ms of masterSchedules) {
+        const scheduleUuid = `MS-${user.doctor.id}-${ms.day_of_week}-${ms.start}`
         await prisma.doctorMasterSchedule.upsert({
-          where: {
-            // Kita buat key unik buatan untuk seed: doctor_id + day_of_week + start_time
-            uuid: `${user.doctor.id}-${ms.day_of_week}-${ms.start}` 
-          },
+          where: { uuid: scheduleUuid },
           update: {},
           create: {
-            uuid: `${user.doctor.id}-${ms.day_of_week}-${ms.start}`,
+            uuid: scheduleUuid,
             doctor_id: user.doctor.id,
             day_of_week: ms.day_of_week,
             start_time: new Date(1970, 0, 1, ms.start, 0),
@@ -130,23 +144,21 @@ async function main() {
         })
       }
 
-      // 4. GENERATOR: Buat DoctorSchedule (Slot Riil) untuk 30 hari ke depan
-      const masterSchedules = await prisma.doctorMasterSchedule.findMany({
+      // Generate Slot untuk 14 hari ke depan
+      const doctorMasterSchedules = await prisma.doctorMasterSchedule.findMany({
         where: { doctor_id: user.doctor.id }
       })
 
-      for (let i = 0; i < 30; i++) {
+      for (let j = 0; j < 14; j++) {
         const targetDate = new Date()
-        targetDate.setDate(targetDate.getDate() + i)
+        targetDate.setDate(targetDate.getDate() + j)
         targetDate.setHours(0, 0, 0, 0)
         
-        const dayOfWeek = targetDate.getDay() // 0-6
+        const dayOfWeek = targetDate.getDay()
 
-        // Cari master schedule yang cocok dengan hari ini
-        const matchedMasters = masterSchedules.filter(ms => ms.day_of_week === dayOfWeek)
+        const matchedMasters = doctorMasterSchedules.filter(ms => ms.day_of_week === dayOfWeek)
 
         for (const ms of matchedMasters) {
-          // Check if slot already exists for this date and time
           const existingSlot = await prisma.doctorSchedule.findFirst({
             where: {
               doctor_id: user.doctor.id,
@@ -165,7 +177,7 @@ async function main() {
                 vip_quota: ms.vip_quota,
                 general_quota: ms.general_quota,
                 status: 'ACTIVE',
-                notes: 'Generated from Master'
+                notes: 'Auto Generated'
               }
             })
           }
@@ -174,7 +186,7 @@ async function main() {
     }
   }
 
-  // 5. Upsert Sample Patient
+  // Sample Patient
   await prisma.user.upsert({
     where: { email: 'pasien@healthcare.com' },
     update: {},
@@ -194,7 +206,7 @@ async function main() {
     }
   })
 
-  console.log('Seeding & Schedule Generation finished successfully!')
+  console.log('Seeding 50 Doctors successfully finished!')
 }
 
 main()

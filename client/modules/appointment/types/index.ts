@@ -13,7 +13,7 @@ export interface Registered {
   patient_type: "VIP" | "GENERAL";
   doctor_schedule: DoctorSchedule & {
     doctor: {
-      user: Pick<User, "name">;
+      name: string;
       specialization?: string;
     }
   };

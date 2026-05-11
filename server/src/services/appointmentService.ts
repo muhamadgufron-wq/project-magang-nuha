@@ -23,10 +23,9 @@ export const createRegistration = async (data: {
       where: { id: data.slotId },
       include: {
         doctor: {
-          include: {
-            user: {
-              select: { name: true }
-            }
+          select: {
+            name: true,
+            initials: true
           }
         }
       }
@@ -74,10 +73,8 @@ export const createRegistration = async (data: {
         doctor_schedule: {
           include: {
             doctor: {
-              include: {
-                user: {
-                  select: { name: true }
-                }
+              select: {
+                name: true
               }
             }
           }
@@ -111,10 +108,8 @@ export const getRegistrationsByUserId = async (userId: number) => {
       doctor_schedule: {
         include: {
           doctor: {
-            include: {
-              user: {
-                select: { name: true }
-              }
+            select: {
+              name: true
             }
           }
         }
@@ -133,10 +128,8 @@ export const getRegistrationById = async (id: number) => {
       doctor_schedule: {
         include: {
           doctor: {
-            include: {
-              user: {
-                select: { name: true }
-              }
+            select: {
+              name: true
             }
           }
         }

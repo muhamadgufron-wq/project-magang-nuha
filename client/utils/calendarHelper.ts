@@ -43,5 +43,6 @@ export const isPrevMonthDisabled = (viewDate: Date, currentDate: Date = new Date
  * @returns boolean - True jika tanggal sudah lewat
  */
 export const isDateInPast = (date: Date): boolean => {
-  return startOfDay(date) < startOfDay(new Date());
+  const today = new Date();
+  return startOfDay(date) < startOfDay(today);
 };

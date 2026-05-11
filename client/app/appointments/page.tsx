@@ -93,7 +93,7 @@ export default function AppointmentsPage() {
                         <div>
                           <div className="flex items-center gap-3 mb-1">
                             <h3 className="font-bold text-gray-900 text-lg">
-                              {reg.doctor_schedule.doctor.user.name}
+                              {reg.doctor_schedule.doctor.name}
                             </h3>
                             <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusStyle(reg.status)}`}>
                               {getStatusLabel(reg.status)}

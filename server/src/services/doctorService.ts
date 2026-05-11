@@ -98,7 +98,6 @@ export const getAllDoctors = async (specialization?: string, page: number = 1, l
       include: {
         user: {
           select: {
-            name: true,
             email: true,
             phone: true,
           }
@@ -113,9 +112,7 @@ export const getAllDoctors = async (specialization?: string, page: number = 1, l
       skip,
       take: limit,
       orderBy: {
-        user: {
-          name: 'asc'
-        }
+        name: 'asc'
       }
     }),
     prisma.doctor.count({ where })
@@ -133,12 +130,15 @@ export const getAllDoctors = async (specialization?: string, page: number = 1, l
 };
 
 export const getDoctorByUuid = async (uuid: string) => {
+  // Ambil mulai dari hari ini (UTC Midnight) untuk konsistensi dengan getAllDoctors
+  const d = new Date();
+  const utcToday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0));
+
   return await prisma.doctor.findUnique({
     where: { uuid },
     include: {
       user: {
         select: {
-          name: true,
           email: true,
           phone: true,
           is_vip: true,
@@ -152,7 +152,7 @@ export const getDoctorByUuid = async (uuid: string) => {
         where: {
           status: 'ACTIVE',
           date: {
-            gte: new Date(), // Hanya ambil jadwal mendatang
+            gte: utcToday, // Gunakan UTC Midnight agar sinkron dengan halaman utama
           }
         },
         orderBy: {

@@ -3,8 +3,11 @@
 import React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useDoctor } from "../hooks/useDoctors";
-import { Calendar, ChevronLeft } from "lucide-react";
-import { format, parseISO, isValid, parse } from "date-fns";
+import { Calendar, ChevronLeft, Clock, Info } from "lucide-react";
+import { format, parseISO, isValid } from "date-fns";
+import { id as localeID } from "date-fns/locale";
+
+import BookingCalendar from "@/components/shared/BookingCalendar";
 
 export const DoctorDetail: React.FC = () => {
   const { id } = useParams();
@@ -47,10 +50,10 @@ export const DoctorDetail: React.FC = () => {
             <div className="px-6 pb-8 -mt-16 text-center">
               <div className="w-32 h-32 bg-white rounded-full p-1 mx-auto mb-4 shadow-md overflow-hidden">
                 <div className="w-full h-full bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-4xl font-black">
-                  {doctor.user.name.charAt(0)}
+                  {doctor.name.charAt(0)}
                 </div>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">{doctor.user.name}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-1">{doctor.name}</h1>
               <p className="text-emerald-600 font-semibold mb-6">{doctor.specialization || "Umum"}</p>
 
               <button 
@@ -63,107 +66,32 @@ export const DoctorDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Schedule */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Schedule Section */}
-          <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="p-1.5 bg-emerald-50 rounded-lg text-emerald-600">
-                <Calendar className="w-5 h-5" />
-              </div>
-              <h2 className="text-lg font-bold text-gray-900">Jadwal Praktik</h2>
+        {/* Right Column: Interactive Calendar */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Jadwal Praktek</h2>
+              <p className="text-gray-500 text-sm italic">Pilih tanggal dan jam di bawah ini untuk melihat ketersediaan slot riil.</p>
             </div>
             
-            <div className="flex flex-col border border-gray-100 rounded-2xl overflow-hidden">
-              {(() => {
-                const daysOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-                const dayLabels: { [key: string]: string } = {
-                  "Monday": "Senin",
-                  "Tuesday": "Selasa",
-                  "Wednesday": "Rabu",
-                  "Thursday": "Kamis",
-                  "Friday": "Jumat",
-                  "Saturday": "Sabtu",
-                  "Sunday": "Minggu"
-                };
+            <BookingCalendar 
+              schedules={doctor.schedules || []} 
+              onSlotSelect={(slotId) => {
+                router.push(`/doctors/${doctor.uuid}/booking?slotId=${slotId}`);
+              }}
+            />
 
-                // Helper Universal untuk normalisasi waktu (Mengonversi UTC ke WIB dengan Benar)
-                const normalizeTimeDisplay = (timeStr: string) => {
-                  if (!timeStr) return "-";
-                  try {
-                    // Jika format ISO dari database (2024-...T08:00:00Z)
-                    if (timeStr.includes('T')) {
-                      const date = parseISO(timeStr);
-                      // Gunakan Intl.DateTimeFormat untuk paksa ke WIB (Asia/Jakarta)
-                      return date.toLocaleTimeString('id-ID', {
-                        timeZone: 'Asia/Jakarta',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false
-                      }).replace(':', '.');
-                    }
-                    // Jika format String Jam saja (08:00:00)
-                    return timeStr.substring(0, 5).replace(':', '.');
-                  } catch {
-                    return "-";
-                  }
-                };
-
-                // Ambil jadwal rutin berdasarkan Master Schedule (0-6)
-                const weeklySchedule: { [key: number]: any } = {};
-                doctor.master_schedules?.forEach((ms: any) => {
-                  if (!weeklySchedule[ms.day_of_week]) {
-                    weeklySchedule[ms.day_of_week] = ms;
-                  }
-                });
-
-                // Mapping Hari yang SANGAT KETAT (0=Sun, 1=Mon, ..., 6=Sat)
-                const uiDaysOrder = [
-                  { name: "Monday", label: "Senin", dbIdx: 1 },
-                  { name: "Tuesday", label: "Selasa", dbIdx: 2 },
-                  { name: "Wednesday", label: "Rabu", dbIdx: 3 },
-                  { name: "Thursday", label: "Kamis", dbIdx: 4 },
-                  { name: "Friday", label: "Jumat", dbIdx: 5 },
-                  { name: "Saturday", label: "Sabtu", dbIdx: 6 },
-                  { name: "Sunday", label: "Minggu", dbIdx: 0 },
-                ];
-
-                return uiDaysOrder.map((day, index) => {
-                  const schedule = weeklySchedule[day.dbIdx];
-                  const isPracticing = !!schedule;
-
-                  const timeRange = isPracticing 
-                    ? `${normalizeTimeDisplay(schedule.start_time)} - ${normalizeTimeDisplay(schedule.end_time)}`
-                    : "Tidak ada jadwal";
-
-                  return (
-                    <div 
-                      key={day.name} 
-                      className={`flex items-center justify-between px-4 py-2.5 ${
-                        index !== uiDaysOrder.length - 1 ? "border-b border-gray-50" : ""
-                      } ${isPracticing ? "bg-white" : "bg-gray-50/50"}`}
-                    >
-                      <p className={`text-sm font-medium ${isPracticing ? "text-gray-900" : "text-gray-400"}`}>
-                        {day.label}
-                      </p>
-                      
-                      <div className="text-right">
-                        <p className={`text-sm font-semibold ${isPracticing ? "text-gray-900" : "text-gray-400 italic font-normal"}`}>
-                          {timeRange}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-
-            {(!doctor.schedules || doctor.schedules.length === 0) && (
-              <div className="text-center py-12 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-                <p className="text-gray-500 italic">Dokter ini belum memiliki jadwal praktek yang terdaftar.</p>
+            <div className="mt-8 flex items-start gap-3 p-4 bg-emerald-50 rounded-2xl">
+              <Info className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-bold text-emerald-900 mb-1">Informasi Jadwal</p>
+                <p className="text-xs text-emerald-700 leading-relaxed">
+                  Kalender di atas menampilkan slot riil yang tersedia di database. 
+                  Anda dapat langsung memilih jam praktek untuk melanjutkan ke proses pendaftaran.
+                </p>
               </div>
-            )}
-          </section>
+            </div>
+          </div>
         </div>
       </div>
     </div>

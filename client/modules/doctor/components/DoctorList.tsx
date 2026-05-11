@@ -6,17 +6,15 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useDoctors, useSpecializations } from "../hooks/useDoctors";
 import { Doctor } from "../types";
 import { User, Calendar, ChevronDown } from "lucide-react";
+import { parseISO, format, isValid } from "date-fns";
+import { id as localeID } from "date-fns/locale";
 
 // Helper untuk tanggal dalam format Indonesia
 const formatDate = (dateString: string) => {
   try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    }).toUpperCase();
+    const date = parseISO(dateString);
+    if (!isValid(date)) return dateString;
+    return format(date, 'EEEE, d MMMM yyyy', { locale: localeID }).toUpperCase();
   } catch {
     return dateString;
   }
@@ -25,8 +23,9 @@ const formatDate = (dateString: string) => {
 // Helper untuk mendapatkan nama hari saja
 const getDayName = (dateString: string) => {
   try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', { weekday: 'long' });
+    const date = parseISO(dateString);
+    if (!isValid(date)) return "";
+    return format(date, 'EEEE', { locale: localeID });
   } catch {
     return "";
   }
@@ -36,12 +35,15 @@ const getDayName = (dateString: string) => {
 const formatTime = (timeString: string) => {
   if (!timeString) return "-";
   try {
-    const date = new Date(timeString);
-    return date.toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
+    // Jika format ISO dari database
+    if (timeString.includes('T')) {
+      const date = parseISO(timeString);
+      const hours = date.getUTCHours().toString().padStart(2, '0');
+      const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+      return `${hours}.${minutes}`;
+    }
+    // Jika format jam mentah (08:00:00)
+    return timeString.substring(0, 5).replace(':', '.');
   } catch {
     return timeString;
   }
@@ -51,9 +53,18 @@ const DoctorListContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Ambil nilai awal dari URL atau gunakan default (tanggal hari ini)
+  // FUNGSI BARU: Ambil tanggal lokal hari ini dalam format YYYY-MM-DD
+  // Menghindari masalah timezone ISOString (UTC) yang sering telat 7 jam (WIB)
+  const getLocalToday = () => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset();
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000));
+    return localDate.toISOString().split('T')[0];
+  };
+
+  // Ambil nilai awal dari URL atau gunakan default lokal hari ini
   const initialSpec = searchParams.get("specialization") || "";
-  const initialDate = searchParams.get("date") || new Date().toISOString().split('T')[0];
+  const initialDate = searchParams.get("date") || getLocalToday();
   const initialPage = parseInt(searchParams.get("page") || "1");
 
   // Local states untuk input (sebelum klik tombol cari)
@@ -67,14 +78,17 @@ const DoctorListContent = () => {
   const [currentPage, setCurrentPage] = useState<number>(initialPage);
   const limit = 10;
 
-  // Sinkronisasi state jika URL berubah
+  // Sinkronisasi state jika URL berubah (misal: klik link dari luar atau tombol back browser)
   useEffect(() => {
     const spec = searchParams.get("specialization") || "";
-    const date = searchParams.get("date") || new Date().toISOString().split('T')[0];
+    const date = searchParams.get("date") || getLocalToday();
     const page = parseInt(searchParams.get("page") || "1");
 
+    // Update input UI
     setInputSpecialization(spec);
     setInputDate(date);
+    
+    // Update trigger fetch data
     setAppliedSpecialization(spec);
     setAppliedDate(date);
     setCurrentPage(page);
@@ -223,7 +237,7 @@ const DoctorListContent = () => {
                           
                           <td className="px-6 py-6 align-top border-r border-gray-50">
                             <div className="text-sm text-gray-800 font-medium">
-                              {doctor.user.name}
+                              {doctor.name}
                             </div>
                           </td>
                           <td className="px-6 py-6 align-top border-r border-gray-50">
